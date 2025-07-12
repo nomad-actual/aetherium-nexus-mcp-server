@@ -10,7 +10,7 @@ a.out
 build/
 out/
 dist/
-.tsconfig.tsbuildinfo
+tsconfig.tsbuildinfo
 
 # Runtime data
 pids
