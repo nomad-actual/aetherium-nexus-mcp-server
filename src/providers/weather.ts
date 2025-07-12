@@ -124,14 +124,18 @@ function buildDaily(daily: any, utcOffsetSeconds: number): ForcastDay[] {
 async function getWeather(weatherQuery: WeatherQuery): Promise<WeatherData> {
     const url = 'https://api.open-meteo.com/v1/forecast'
 
+    const speedUnit = weatherQuery.units === 'metric' ? 'kph' : 'mph'
+    const precipitationUnit = weatherQuery.units === 'metric' ? 'centimeter' : 'inch'
+    const temperatureUnit = weatherQuery.units === 'metric' ? 'celsius' : 'fahrenheit'
+
     const params = {
         latitude: [weatherQuery.lat],
         longitude: [weatherQuery.lon],
         current: currentVars.join(','),
         daily: dailyVars.join(','),
-        temperature_unit: 'fahrenheit', // todo, use units
-        wind_speed_unit: 'mph', // todo, use units
-        precipitation_unit: 'inch', // todo, use units
+        temperature_unit: temperatureUnit,
+        wind_speed_unit: speedUnit,
+        precipitation_unit: precipitationUnit,
         forecast_days: 5,
         timezone: weatherQuery.timezone,
     }
