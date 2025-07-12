@@ -1,5 +1,5 @@
 # Stage 1: Build stage
-FROM node:22.13-alpine3.21 as builder
+FROM node:22-alpine3.22 as builder
 
 WORKDIR /app
 COPY package*.json ./
@@ -12,7 +12,7 @@ RUN npm install --production=false
 RUN npm run build
 
 # Stage 2: Production stage
-FROM node:22.13-alpine3.21
+FROM node:22-alpine3.22
 
 WORKDIR /app
 

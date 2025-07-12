@@ -1,13 +1,14 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp';
-import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js'
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { buildMCPServer } from './server/mcp.server.js';
+import { getConfig } from './utils/config.js';
+import { AetheriumConfig } from './types.js';
 
-import { randomUUID } from 'node:crypto';
-import { buildMCPServer } from './server/mcp.server';
+const config: AetheriumConfig = getConfig()
 
 function buildMcpServerLol() {
-    const server = buildMCPServer()
+    const server = buildMCPServer(config)
 
     server.registerTool(
         'fetch-current-time',
@@ -36,7 +37,7 @@ function buildMcpServerLol() {
 const app = express();
 app.use(express.json());
 app.use(cors({
-  origin: ['https://homelab.ist'],
+  origin: config.mcpServer.cors,
   exposedHeaders: ['Mcp-Session-Id'],
   allowedHeaders: ['Content-Type', 'mcp-session-id'],
 }));
@@ -103,7 +104,8 @@ app.delete('/mcp', async (req: Request, res: Response) => {
   }));
 });
 
-app.listen(
-  { port: 3000, host: '0.0.0.0' }, // todo config
-  (error: Error| null) => console.log(`Server is running! ${new Date().toLocaleTimeString()}`, error)
-)
+const { port, host } = config.mcpServer
+
+app.listen({ port, host }, (error: Error| null) => {
+  console.log(`MCP Server listening on http://${host}:${port}`, error || '')
+})

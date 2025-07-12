@@ -5,8 +5,12 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-config.json
-
+# ignore library file and some things
+a.out
+build/
+out/
+dist/
+.tsconfig.tsbuildinfo
 
 # Runtime data
 pids
@@ -62,8 +66,3 @@ typings/
 
 # vs code ignore
 .vscode/
-
-# ignore library file and some things
-a.out
-build/
-out/

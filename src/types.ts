@@ -1,6 +1,7 @@
-import { CallToolResult } from "@modelcontextprotocol/sdk/types"
+import { CallToolResult } from "@modelcontextprotocol/sdk/types.js"
 
 type LocaleUnit = 'metric' | 'imperial'
+export type UnitStyle = 'short' | 'long' | 'narrow'
 
 export type NtpConfig = {
     host: string,
@@ -43,34 +44,6 @@ export type ForcastDay = {
     time: Date,
 }
 
-export type ScreenConfig = {
-    dataRefresh: number,
-    dataTimeout: number,
-    ntpConfig: NtpConfig,
-    weatherConfig: WeatherConfig,
-    rasterizerConfig: RasterizeConfig,
-}
-
-export type RasterizeConfig = {
-    height: number,
-    width: number,
-    background?: {
-        image: string,
-        color: string,
-    },
-}
-
-export type LocalizationConfig = {
-    locale: string, // example: en-US, de-DE, etc
-    unit: LocaleUnit,
-    datetime: {
-        month: 'long' | 'short',
-        showWeekDay: boolean,
-        is24HrTime: boolean,
-    },
-}
-
-
  export type LocationResult = { 
     latitude: number,
     longitude: number,
@@ -83,6 +56,35 @@ export type LocalizationConfig = {
     postalCodes: string[],
     state: string, // example: California, New York, etc
     county: string, // example: Los Angeles County, Brooklyn, etc
+}
+
+
+export type AetheriumLocaleOptions = {
+        region: string,
+        units: LocaleUnit,
+        monthStyle: UnitStyle,
+        showWeekday: boolean,
+        is24HourTime: boolean
+}
+
+export type AetheriumConfig = {
+    mcpServer: {
+        port: number,
+        host: string,
+        cors: string[],
+        title: string,
+    },
+    defaultLocation: {
+        lat: number,
+        lon: number,
+        timezone: string
+    },
+    timeserver: { 
+        host: string,
+        port: number,
+        timeout: number
+    },
+    locale: AetheriumLocaleOptions,
 }
 
 export type ToolsDef = {

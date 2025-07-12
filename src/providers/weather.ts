@@ -1,18 +1,18 @@
+import { fetchWeatherApi } from 'openmeteo'
+import { closestMatch, makeLocationString, search } from '../utils/location.js'
+import z from 'zod'
+import { formatTemperature } from '../utils/formatter.js'
+import { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
+import { WeatherApiResponse } from '@openmeteo/sdk/weather-api-response.js'
+import { getConfig } from '../utils/config.js'
 import {
+    AetheriumConfig,
     CurrentWeather,
     ForcastDay,
-    LocalizationConfig,
-    LocationResult,
     ToolsDef,
     WeatherData,
     WeatherQuery,
-} from '../types'
-import { fetchWeatherApi } from 'openmeteo'
-import { WeatherApiResponse } from '@openmeteo/sdk/weather-api-response'
-import { closestMatch, makeLocationString, search } from '../utils/location'
-import z from 'zod'
-import { formatTemperature } from '../utils/formatter'
-import { CallToolResult } from '@modelcontextprotocol/sdk/types'
+} from '../types.js'
 
 const currentVars = ['temperature_2m', 'precipitation', 'rain', 'weather_code']
 const dailyVars = ['weather_code', 'temperature_2m_max', 'temperature_2m_min']
@@ -121,9 +121,7 @@ function buildDaily(daily: any, utcOffsetSeconds: number): ForcastDay[] {
     return days
 }
 
-async function getWeather(
-    weatherQuery: WeatherQuery
-): Promise<WeatherData> {
+async function getWeather(weatherQuery: WeatherQuery): Promise<WeatherData> {
     const url = 'https://api.open-meteo.com/v1/forecast'
 
     const params = {
@@ -147,64 +145,40 @@ async function getWeather(
     const data: WeatherData = {
         current: buildCurrent(response.current(), today),
         tomorrow,
-        days: days.slice(2),
+        days: days.slice(2), // omit today and tomorrow since we already have them
     }
 
     return data
 }
 
-async function currentWeatherToolHandler({ location }: any): Promise<CallToolResult> {
-    // todo, load from config
-    let locationObj: LocationResult = {
-        latitude: 34.052235,
-        longitude: -118.243683,
-        name: 'Los Angeles',
-        country: 'United States',
-        countryCode: 'US',
-        population: 10000000,
-        timezone: 'America/Los_Angeles',
-        elevation: 10,
-        postalCodes: undefined,
-        state: 'California',
-        county: 'Orange',
-    }
-
-    const localeOpts: LocalizationConfig = {
-        locale: 'en-US',
-        unit: 'imperial',
-        datetime: {
-            month: 'short',
-            showWeekDay: true,
-            is24HrTime: false,
-        }
-    }
+async function currentWeatherToolHandler({ location }: any, config: AetheriumConfig): Promise<CallToolResult> {
+    let locationObj = null
 
     const locationArg: string = location
 
     if (locationArg) {
-        // preprocess location
+        // not a huge fan of this assumption but it's fine for now
         const simpleQuery = locationArg.trim().split(',')
-        const [city, state] = simpleQuery // might need to look up states by name
+        const [city, state] = simpleQuery
 
         const locations = await search(city, { limit: 5 })
 
-        // search for states
-        // console.log(`looking for ${city}, ${state}`, locations)
-
         if (locations.length === 0) {
-            // return mcp error instead
+            // todo - return mcp error instead
             throw new Error('Location not found')
         }
 
         locationObj = closestMatch(locations, city, state)
     }
 
-    const weatherQuery: WeatherQuery = {
-        lat: locationObj.latitude,
-        lon: locationObj.longitude,
-        timezone: locationObj.timezone,
-        units: localeOpts.unit,
+    const weatherQuery = {
+        lat: locationObj?.latitude || config.defaultLocation.lat,
+        lon: locationObj?.longitude || config.defaultLocation.lon,
+        timezone: locationObj?.timezone || config.defaultLocation.timezone,
+        units: config.locale.units,
     }
+
+    console.log(weatherQuery, config.defaultLocation)
 
     const weather = await getWeather(weatherQuery)
 
@@ -218,8 +192,8 @@ async function currentWeatherToolHandler({ location }: any): Promise<CallToolRes
         rain,
     } = weather.current
 
-    const currTemp = formatTemperature(currentTemp, localeOpts)
-    const maxTemp = formatTemperature(maxTempRaw, localeOpts)
+    const currTemp = formatTemperature(currentTemp, config.locale)
+    const maxTemp = formatTemperature(maxTempRaw, config.locale)
 
     const weatherSummary = 
         `Current conditions for ${locationObj.name}: ${currTemp} ${description}. High of ${maxTemp}.`
@@ -229,7 +203,7 @@ async function currentWeatherToolHandler({ location }: any): Promise<CallToolRes
     return {
         content: [
             { type: 'text', text: weatherSummary },
-            { type: 'text', text: `Percipitation ${precipitation}, Rain ${rain}`}, // what about snow?
+            { type: 'text', text: `Percipitation ${precipitation}, Rain ${rain}`}, // what about snow or hail?
             { type: 'text', text: locationStr }
         ]
     }
@@ -253,6 +227,9 @@ export function buildCurrentWeatherTool(): ToolsDef {
                 openWorldHint: true,
             },
         },
-        handler: currentWeatherToolHandler
+        handler: async(args: any) => {
+            const config = getConfig()
+            return currentWeatherToolHandler(args, config)
+        }
     }
 }

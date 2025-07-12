@@ -1,5 +1,5 @@
 import { Client as NTP } from 'ntp-time'
-import { NtpConfig } from '../types'
+import { NtpConfig } from '../types.js'
 
 export async function getTime(config: NtpConfig): Promise<Date> {
     try {

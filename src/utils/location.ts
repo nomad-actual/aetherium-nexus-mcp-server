@@ -1,6 +1,6 @@
 
 import axios from 'axios';
-import { LocationResult } from '../types';
+import { LocationResult } from '../types.js';
 
 export async function search(query: string, { limit = 10, language = 'en' }): Promise<LocationResult[]> {
 

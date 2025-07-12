@@ -1,17 +1,16 @@
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp';
-import { buildCurrentWeatherTool } from '../providers/weather';
-import { ToolsDef } from '../types';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { buildCurrentWeatherTool } from '../providers/weather.js';
+import { ToolsDef, AetheriumConfig } from '../types.js';
 
 const toolsDef: ToolsDef[] = [
    buildCurrentWeatherTool(),
 ]
 
-// builds the mcp server and returns its instance
-export function buildMCPServer(): McpServer {
+export function buildMCPServer(config: AetheriumConfig): McpServer {
     const server = new McpServer({
-        name: 'Aetherium Nexus MCP Server', // todo custom name?
-        version: '1.0.0',
-        title: 'Aetherium Nexus MCP Server',
+        name: config.mcpServer.title,
+        version: '1.0.0', // todo config?
+        title: config.mcpServer.title,
     }, {
       capabilities: {
         tools: {}
@@ -19,6 +18,7 @@ export function buildMCPServer(): McpServer {
     });
 
     toolsDef.forEach((tool) => {
+        // seems like can pass handler for progress updates as well
         server.registerTool(tool.name, tool.config, tool.handler)
     })
 

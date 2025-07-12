@@ -1,30 +1,30 @@
-import { LocalizationConfig } from '../types'
+import { AetheriumLocaleOptions } from '../types.js'
 
-export function formatTemperature(temperature: number, localeOpts: LocalizationConfig) {
-    const unit = localeOpts.unit === 'metric' ? 'celsius' : 'fahrenheit'
+export function formatTemperature(temperature: number, localeOpts: AetheriumLocaleOptions) {
+    const unit = localeOpts.units === 'metric' ? 'celsius' : 'fahrenheit'
 
-    const formatter = Intl.NumberFormat(localeOpts.locale, {
+    const formatter = Intl.NumberFormat(localeOpts.region, {
         style: 'unit',
         unit,
-        unitDisplay: 'short',
+        unitDisplay: localeOpts.monthStyle,
         maximumFractionDigits: 0,
     })
 
     return formatter.format(temperature)
 }
 
-export function formatTime(date: Date, localeOpts: LocalizationConfig) {
-    return date.toLocaleString(localeOpts.locale, { hour: 'numeric', minute: 'numeric' })
+export function formatTime(date: Date, localeOpts: AetheriumLocaleOptions) {
+    return date.toLocaleString(localeOpts.region, { hour: 'numeric', minute: 'numeric' })
 }
 
-export function formatDate(date: Date, localeOpts: LocalizationConfig) {
-    const weekday = localeOpts.datetime.showWeekDay ? 'short' : undefined
+export function formatDate(date: Date, localeOpts: AetheriumLocaleOptions) {
+    const weekday = localeOpts.showWeekday ? 'short' : undefined
     
-    return date.toLocaleDateString(localeOpts.locale, { 
+    return date.toLocaleDateString(localeOpts.region, { 
         year: 'numeric',
-        month: localeOpts.datetime.month,
+        month: localeOpts.monthStyle,
         day: 'numeric',
         weekday,
-        hourCycle: !!localeOpts.datetime.is24HrTime ? 'h24' : 'h12'
+        hourCycle:  localeOpts.is24HourTime ? 'h24' : 'h12'
     })
 }

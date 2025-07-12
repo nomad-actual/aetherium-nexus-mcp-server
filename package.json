@@ -7,7 +7,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
-    "start:dev": "npx tsx src/app.ts",
+    "start:dev": "npm run build && node --env-file=.env dist/app.js",
     "start": "node dist/app.js"
   },
   "keywords": [],
@@ -17,6 +17,7 @@
     "@modelcontextprotocol/sdk": "^1.15.1",
     "cors": "^2.8.5",
     "express": "^5.1.0",
+    "geo-tz": "^8.1.4",
     "ntp-time": "^2.0.8",
     "openmeteo": "^1.2.0",
     "zod": "^3.25.76"
