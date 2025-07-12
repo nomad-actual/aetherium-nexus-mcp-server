@@ -1,0 +1,34 @@
+# Node.js related
+node_modules/
+npm-debug.log
+
+# IDEs and editors
+.idea/
+.vscode/
+
+# OS generated metadata
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Build artifacts
+dist/
+build/
+out/
+tsconfig.tsbuildinfo
+
+# Environment variables
+.env*
+
+# Tests
+coverage/
+test-results.xml
+
+# Documentation
+docs/
+
+# Version control system files
+.git/
