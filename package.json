@@ -1,0 +1,35 @@
+{
+  "name": "mcp-test",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "start:dev": "npx tsx src/app.ts",
+    "start": "node dist/app.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.15.1",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "ntp-time": "^2.0.8",
+    "openmeteo": "^1.2.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@openmeteo/sdk": "^1.20.1",
+    "@types/axios": "^0.14.4",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.0.12",
+    "gts": "^6.0.2",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3"
+  }
+}
