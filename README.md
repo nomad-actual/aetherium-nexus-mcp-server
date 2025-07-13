@@ -3,7 +3,7 @@ My collection of MCP tools
 
 ### Todo
 
-- [ ] Configuration
+- [x] Configuration
 - [ ] Docker pushing
 - [ ] Logging
 - [ ] Time tool
@@ -14,3 +14,4 @@ My collection of MCP tools
 - [ ] Web search (searxng)
 - [ ] Documents via vector search
 - [ ] Use embeddings loaded into file structure
+- [ ] youtube downloader?

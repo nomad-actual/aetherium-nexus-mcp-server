@@ -29,7 +29,7 @@ export type WeatherData = {
 }
 
 export type CurrentWeather = {
-    currentTemp: number,
+    temperature: number,
     maxTemp: number,
     minTemp: number,
     description: string,

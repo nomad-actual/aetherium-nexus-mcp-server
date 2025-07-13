@@ -2,17 +2,16 @@
 FROM node:22-alpine3.22 as builder
 
 WORKDIR /app
+
 COPY package*.json ./
-COPY ./src .
+RUN npm install && npm cache clean --force
 
-RUN npm install --production=false
-
-
-# Build the TypeScript project
+COPY . .
 RUN npm run build
 
-# Stage 2: Production stage
-FROM node:22-alpine3.22
+# Stage 2: Runner stage
+FROM node:22-alpine3.22 as runner
+ENV NODE_ENV=production
 
 WORKDIR /app
 
@@ -20,7 +19,7 @@ WORKDIR /app
 COPY --from=builder /app/dist ./dist
 COPY package*.json ./
 
-RUN npm install --only=production
+RUN npm ci --omit=dev && npm cache clean --force && npm prune --production
 
 EXPOSE 3000
 

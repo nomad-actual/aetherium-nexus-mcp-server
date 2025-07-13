@@ -15,6 +15,7 @@
   "license": "ISC",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.15.1",
+    "axios": "^1.10.0",
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "geo-tz": "^8.1.4",
@@ -24,13 +25,10 @@
   },
   "devDependencies": {
     "@openmeteo/sdk": "^1.20.1",
-    "@types/axios": "^0.14.4",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/node": "^24.0.12",
     "gts": "^6.0.2",
-    "ts-node": "^10.9.2",
-    "tsx": "^4.20.3",
     "typescript": "^5.8.3"
   }
 }

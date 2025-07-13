@@ -20,10 +20,7 @@ const dailyVars = ['weather_code', 'temperature_2m_max', 'temperature_2m_min']
 // to use for today's future forecast rather than only now's
 const hourslyVars = ['temperature_2m','precipitation']
 
-function buildCurrent(
-    currentResponse: any,
-    todayForecast: ForcastDay
-): CurrentWeather {
+function buildCurrent(currentResponse: any, todayForecast: ForcastDay): CurrentWeather {
     // would like to map vars array to values but this is fine for now
     const currentTemp = currentResponse.variables(0).value()
     const precipitation = currentResponse.variables(1).value()
@@ -31,7 +28,7 @@ function buildCurrent(
     const weatherDesc = weatherCodeToType(currentResponse.variables(3).value())
 
     const current: CurrentWeather = {
-        currentTemp: currentTemp,
+        temperature: currentTemp,
         maxTemp: todayForecast.maxTemp,
         minTemp: todayForecast.minTemp,
         description: weatherDesc,
@@ -188,15 +185,17 @@ async function currentWeatherToolHandler({ location }: any, config: AetheriumCon
 
     console.log(`weather for ${locationObj.name}`, weather)
 
+    const { current } = weather;
+
     const {
-        currentTemp,
+        temperature,
         maxTemp: maxTempRaw,
         description,
         precipitation,
         rain,
-    } = weather.current
+    } = current
 
-    const currTemp = formatTemperature(currentTemp, config.locale)
+    const currTemp = formatTemperature(temperature, config.locale)
     const maxTemp = formatTemperature(maxTempRaw, config.locale)
 
     const weatherSummary = 
@@ -207,7 +206,10 @@ async function currentWeatherToolHandler({ location }: any, config: AetheriumCon
     return {
         content: [
             { type: 'text', text: weatherSummary },
-            { type: 'text', text: `Percipitation ${precipitation}, Rain ${rain}`}, // what about snow or hail?
+            // improve this by adding more details about the weather conditions (e.g., humidity, wind speed)
+            // also units
+            // what about snow or hail?
+            { type: 'text', text: `Percipitation ${precipitation}, Rain ${rain}`},
             { type: 'text', text: locationStr }
         ]
     }
