@@ -4,7 +4,7 @@ My collection of MCP tools
 ### Todo
 
 - [x] Configuration
-- [ ] Docker pushing
+- [x] Docker pushing
 - [ ] Logging
 - [ ] Time tool
 - [ ] Weather forecast tool (as in tomorrow)
