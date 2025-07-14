@@ -1,4 +1,4 @@
-import { AetheriumLocaleOptions } from '../types.js'
+import type { AetheriumLocaleOptions } from '../types.js'
 
 export function formatTemperature(temperature: number, localeOpts: AetheriumLocaleOptions) {
     const unit = localeOpts.units === 'metric' ? 'celsius' : 'fahrenheit'
@@ -11,6 +11,22 @@ export function formatTemperature(temperature: number, localeOpts: AetheriumLoca
     })
 
     return formatter.format(temperature)
+}
+
+export function formatDateTime(date: Date, localeOpts: AetheriumLocaleOptions, timezone: string) {
+    const dateStyle = 'long' // "full" | "long" | "medium" | "short"
+    const timeStyle = 'long' // "full" | "long" | "medium" | "short"
+    const hourCycle = localeOpts.is24HourTime ? 'h24' : 'h12' // "h11" | "h12" | "h23" | "h24"
+    const dayPeriod = 'short' // "narrow" | "short" | "long
+    
+    const formatter = new Intl.DateTimeFormat(localeOpts.region, {
+        dateStyle,
+        timeStyle,
+        hourCycle,
+        timeZone: timezone,
+    })
+
+    return formatter.format(date)
 }
 
 export function formatTime(date: Date, localeOpts: AetheriumLocaleOptions) {

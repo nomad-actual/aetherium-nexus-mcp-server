@@ -1,17 +1,16 @@
 {
-  "extends": "./node_modules/gts/tsconfig-google.json",
+  "extends": "@tsconfig/node22/tsconfig.json",
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "Node16",
-    "moduleResolution": "Node16",
     "rootDir": "./src",
     "outDir": "dist",
-    "sourceMap": true,
-    "strictNullChecks": false,
-    "esModuleInterop": true,
+    "moduleDetection": "force",
+    "noImplicitOverride": true,
   },
   "include": [
     "src/**/*.ts",
     "test/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
   ]
 }

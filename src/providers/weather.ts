@@ -2,10 +2,10 @@ import { fetchWeatherApi } from 'openmeteo'
 import { closestMatch, makeLocationString, search } from '../utils/location.js'
 import z from 'zod'
 import { formatTemperature } from '../utils/formatter.js'
-import { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
+import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import { WeatherApiResponse } from '@openmeteo/sdk/weather-api-response.js'
 import { getConfig } from '../utils/config.js'
-import {
+import type {
     AetheriumConfig,
     CurrentWeather,
     ForcastDay,
@@ -13,9 +13,14 @@ import {
     WeatherData,
     WeatherQuery,
 } from '../types.js'
+import logger from '../utils/logger.js'
 
 const currentVars = ['temperature_2m', 'precipitation', 'rain', 'weather_code']
-const dailyVars = ['weather_code', 'temperature_2m_max', 'temperature_2m_min']
+const dailyVars = [
+    'weather_code', 'temperature_2m_max', 
+    'temperature_2m_min', 'precipitation_sum', 
+    'precipitation_hours'
+]
 
 // to use for today's future forecast rather than only now's
 const hourslyVars = ['temperature_2m','precipitation']
@@ -99,6 +104,8 @@ function buildDaily(daily: any, utcOffsetSeconds: number): ForcastDay[] {
         weatherCode: daily.variables(0).valuesArray(),
         temperatureMax2m: daily.variables(1).valuesArray(),
         temperatureMin2m: daily.variables(2).valuesArray(),
+        percipitationSum: daily.variables(3).valuesArray(),
+        percipitationHours: daily.variables(4).valuesArray()
     }
 
     const days: ForcastDay[] = []
@@ -110,10 +117,12 @@ function buildDaily(daily: any, utcOffsetSeconds: number): ForcastDay[] {
             description: weatherCodeToType(weatherData.weatherCode[i]),
             maxTemp: weatherData.temperatureMax2m[i],
             minTemp: weatherData.temperatureMin2m[i],
+            percipitationSum: weatherData.percipitationSum[i],
+            percipitationHours: weatherData.percipitationHours[i],
         })
     }
 
-    // console.log('days', days)
+    logger.info(days)
 
     return days
 }
@@ -133,15 +142,23 @@ async function getWeather(weatherQuery: WeatherQuery): Promise<WeatherData> {
         temperature_unit: temperatureUnit,
         wind_speed_unit: speedUnit,
         precipitation_unit: precipitationUnit,
-        forecast_days: 5,
+        forecast_days: 3,
         timezone: weatherQuery.timezone,
     }
 
     const responses: WeatherApiResponse[] = await fetchWeatherApi(url, params)
     const [response] = responses
 
+    if (!response) {
+        throw new Error('No weather data available')
+    }
+
     const days = buildDaily(response.daily(), response.utcOffsetSeconds())
     const [today, tomorrow] = days
+
+    if (!today || !tomorrow) {
+        throw new Error('Weather data incomplete');
+    }
 
     const data: WeatherData = {
         current: buildCurrent(response.current(), today),
@@ -160,7 +177,7 @@ async function currentWeatherToolHandler({ location }: any, config: AetheriumCon
     if (locationArg) {
         // not a huge fan of this assumption but it's fine for now
         const simpleQuery = locationArg.trim().split(',')
-        const [city, state] = simpleQuery
+        const [city = '', state] = simpleQuery
 
         const locations = await search(city, { limit: 5 })
 
@@ -179,11 +196,11 @@ async function currentWeatherToolHandler({ location }: any, config: AetheriumCon
         units: config.locale.units,
     }
 
-    console.log(weatherQuery, config.defaultLocation)
+    logger.info('Weather Query', { weatherQuery, location: config.defaultLocation })
 
     const weather = await getWeather(weatherQuery)
 
-    console.log(`weather for ${locationObj.name}`, weather)
+    logger.info(`weather for ${locationObj?.name || 'Default Location'}`, weather)
 
     const { current } = weather;
 
@@ -199,7 +216,7 @@ async function currentWeatherToolHandler({ location }: any, config: AetheriumCon
     const maxTemp = formatTemperature(maxTempRaw, config.locale)
 
     const weatherSummary = 
-        `Current conditions for ${locationObj.name}: ${currTemp} ${description}. High of ${maxTemp}.`
+        `Current conditions for ${locationObj?.name}: ${currTemp} ${description}. High of ${maxTemp}.`
 
     const locationStr = makeLocationString(locationObj)
 
