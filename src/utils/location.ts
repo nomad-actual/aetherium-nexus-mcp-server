@@ -1,6 +1,7 @@
 
 import axios from 'axios';
-import { LocationResult } from '../types.js';
+import type { LocationResult } from '../types.js';
+import logger from './logger.js';
 
 export async function search(query: string, { limit = 10, language = 'en' }): Promise<LocationResult[]> {
 
@@ -18,7 +19,7 @@ export async function search(query: string, { limit = 10, language = 'en' }): Pr
     const { results } = locationResp.data
     
     // will need to do some work when we find a state as well
-    // console.log('rawwwwww', results)
+    // logger.info('rawwwwww', results)
 
     const locations: LocationResult[] = results.map((r: any) => {
         return {
@@ -108,24 +109,26 @@ export function closestMatch(locations: LocationResult[], city: string, stateOrP
     );
 
     if (likely.length === 0) {
-        console.log(`no matches for ${city}`);
+        logger.info(`no matches for ${city}`);
         return null;
     }
 
     let stateSearch = likely.find(loc => loc.state === stateFullName)
     if (stateSearch) {
-        console.log(`found exact match for ${city} ${stateFullName}`)
+        logger.info(`found exact match for ${city} ${stateFullName}`)
         return stateSearch;
     }
 
-    console.log('no exact match, finding closest by population')
+    logger.info('no exact match, finding closest by population')
     likely.sort((a, b) => b.population - a.population);
-    console.log('chosen', likely[0])
+    logger.info('chosen', likely[0])
 
-    return likely[0];
+    return likely[0] || null;
 }
 
-export function makeLocationString(location: LocationResult): string {
+export function makeLocationString(location: LocationResult | null): string {
+    if (!location) return 'Unknown Location';
+
     const { name, state } = location;
 
     if (name.toLocaleLowerCase() === state.toLocaleLowerCase()) return name;

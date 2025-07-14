@@ -1,9 +1,11 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { buildCurrentWeatherTool } from '../providers/weather.js';
-import { ToolsDef, AetheriumConfig } from '../types.js';
+import type { ToolsDef, AetheriumConfig } from '../types.js';
+import { buildTimeTool } from '../providers/time.js';
 
 const toolsDef: ToolsDef[] = [
    buildCurrentWeatherTool(),
+   buildTimeTool(),
 ]
 
 export function buildMCPServer(config: AetheriumConfig): McpServer {

@@ -1,18 +1,13 @@
 import { CallToolResult } from "@modelcontextprotocol/sdk/types.js"
 
 type LocaleUnit = 'metric' | 'imperial'
+
 export type UnitStyle = 'short' | 'long' | 'narrow'
 
 export type NtpConfig = {
     host: string,
     port?: number,
     timeout: number,
-}
-
-export type WeatherConfig = {
-    lat: number,
-    lon: number,
-    units: LocaleUnit,
 }
 
 export type WeatherQuery = {
@@ -42,6 +37,8 @@ export type ForcastDay = {
     minTemp: number,
     description: string,
     time: Date,
+    percipitationSum: number,
+    percipitationHours: number,
 }
 
  export type LocationResult = { 
