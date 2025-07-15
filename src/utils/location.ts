@@ -18,9 +18,6 @@ export async function search(query: string, { limit = 10, language = 'en' }): Pr
 
     const { results } = locationResp.data
     
-    // will need to do some work when we find a state as well
-    // logger.info('rawwwwww', results)
-
     const locations: LocationResult[] = results.map((r: any) => {
         return {
             latitude: r.latitude,

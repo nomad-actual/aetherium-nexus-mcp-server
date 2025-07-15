@@ -200,7 +200,7 @@ async function currentWeatherToolHandler({ location }: any, config: AetheriumCon
 
     const weather = await getWeather(weatherQuery)
 
-    logger.info(`weather for ${locationObj?.name || 'Default Location'}`, weather)
+    logger.info(`weather for ${locationObj?.name || 'Default Location'} ${weather}`)
 
     const { current } = weather;
 
