@@ -2,7 +2,7 @@
 
 My collection of MCP tools
 
-## Todo
+## Done
 
 - [x] Configuration
 - [x] Docker pushing
@@ -10,14 +10,20 @@ My collection of MCP tools
 - [x] Time tool (what did I mean by this)
 - [x] Web search (searxng)
 - [x] More complex weather forecast tool (as in tomorrow)
-- [ ] Improve logging (not so noisy on weather)
-- [ ] Tune search results (might be abort signals needed)
+- [x] Improve logging (not so noisy on weather)
+- [x] basic package tracker
 
 ### MVP
 
-- [ ] Use embeddings loaded into file structure
-- [ ] Notes archive first
+- [ ] Fix ghetto weather location lookups (no default)
+- [ ] Tune search results performance (might be abort signals needed)
+- [ ] improve accuracy of package screenshots? perhaps reduce viewport size
+- [ ] Notes archive first embeddings
 - [ ] Documents via vector search
+
+### Extra
+
 - [ ] Resume builder based on pasted job descriptions
-- [ ] Shodan search for fun
 - [ ] youtube summarizer
+- [ ] Shodan search for fun
+- [ ] translate subs from a file to another language

@@ -6,12 +6,14 @@ import {
 import type { ToolsDef, AetheriumConfig } from '../types.js'
 import { buildTimeTool } from '../providers/time.js'
 import { buildWebSearchTool } from '../providers/websearch.js'
+import { buildPackageTrackingTool } from '../providers/trackpackage.js'
 
 const toolsDef: ToolsDef[] = [
     buildCurrentWeatherTool(),
     buildForecastTool(),
     buildTimeTool(),
     buildWebSearchTool(),
+    buildPackageTrackingTool(),
 ]
 
 export function buildMCPServer(config: AetheriumConfig): McpServer {

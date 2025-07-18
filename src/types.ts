@@ -103,6 +103,21 @@ export type AetheriumConfig = {
     locale: AetheriumLocaleOptions,
 }
 
+export type ScrapeOptions = {
+    maxContentLength: number; // in characters to the closest sentence
+    minReadableLength: number; // in characters,
+    minScore: number,
+}
+
+export type ReadableWebpageContent = {
+    title: string;
+    url: string;
+    content: string;
+    siteName: string;
+    lang: string;
+    publishedTime: string;
+}
+
 export type ToolsDef = {
     name: string,
     config: any,
