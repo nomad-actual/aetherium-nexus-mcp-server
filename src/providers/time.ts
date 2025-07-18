@@ -13,7 +13,7 @@ export async function getTime(config: NtpConfig): Promise<Date> {
         const packet = await client.syncTime()
 
         // will need better logging levels (aka pino)
-        // logger.info(`Time retrieved from ${config.host} - ${packet.time}`, packet)
+        logger.info(`Time retrieved ${packet.time}`)
 
         return packet.time
     } catch (err) {

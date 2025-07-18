@@ -38,6 +38,11 @@ export function getConfig(): AetheriumConfig {
     const showWeekday = process.env.LOCALE_SHOWWEEKDAY === 'true';
     const is24HourTime = process.env.IS_24_HOUR_TIME === 'true';
 
+    const searchHost = process.env.SEARCH_HOST || ''
+    const searchTimeout = parseInt(process.env.SEARCH_TIMEOUT || '', 10) || 10_000
+    const searchContentLimit = parseInt(process.env.SEARCH_PAGE_CONTENT_LIMIT || '', 10) || 5_000
+    const maxResults = parseInt(process.env.SEARCH_MAX_RESULTS || '', 10) || 5
+
     config = {
         mcpServer: {
             port: mcpServerPort,
@@ -54,6 +59,12 @@ export function getConfig(): AetheriumConfig {
             host: timeserverHost,
             port: timeserverPort,
             timeout: timeserverTimeout
+        },
+        search: {
+            host: searchHost,
+            timeout: searchTimeout,
+            contentLimit: searchContentLimit,
+            maxResults: maxResults,
         },
         locale: {
             region: localeRegion,

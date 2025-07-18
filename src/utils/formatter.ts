@@ -44,3 +44,7 @@ export function formatDate(date: Date, localeOpts: AetheriumLocaleOptions) {
         hourCycle:  localeOpts.is24HourTime ? 'h24' : 'h12'
     })
 }
+
+export function capitalizeFirstLetter(str: string): string {
+    return str.charAt(0).toUpperCase() + str.slice(1)
+}

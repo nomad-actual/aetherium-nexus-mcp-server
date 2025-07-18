@@ -15,12 +15,25 @@ export type WeatherQuery = {
     lon: number,
     units: LocaleUnit,
     timezone: string,
+    currentWeatherVars: string[],
+    dailyWeatherVars: string[],
+    hourlyWeatherVars: string[],
+    forecastDays: number,
+}
+
+export type ForecastHour = {
+    time: Date,
+    temperature: number,
+    feelsLike: number,
+    precipitationProbability: number,
+    precipitation: string, // unsure what this is
+    description: string,
 }
 
 export type WeatherData = {
     current: CurrentWeather
-    tomorrow: ForcastDay,
-    days: ForcastDay[],
+    days: ForecastDay[],
+    hours: ForecastHour[],
 }
 
 export type CurrentWeather = {
@@ -32,7 +45,7 @@ export type CurrentWeather = {
     rain: number,
 }
 
-export type ForcastDay = {
+export type ForecastDay = {
     maxTemp: number,
     minTemp: number,
     description: string,
@@ -80,6 +93,12 @@ export type AetheriumConfig = {
         host: string,
         port: number,
         timeout: number
+    },
+    search: {
+        host: string,
+        timeout: number,
+        contentLimit: number,
+        maxResults: number,
     },
     locale: AetheriumLocaleOptions,
 }

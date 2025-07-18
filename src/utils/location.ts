@@ -120,7 +120,9 @@ export function closestMatch(locations: LocationResult[], city: string, stateOrP
     likely.sort((a, b) => b.population - a.population);
     logger.info('chosen', likely[0])
 
-    return likely[0] || null;
+    const [hopefully] = likely
+
+    return hopefully || null;
 }
 
 export function makeLocationString(location: LocationResult | null): string {
