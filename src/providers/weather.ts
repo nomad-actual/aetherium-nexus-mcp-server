@@ -360,7 +360,7 @@ export function buildCurrentWeatherTool(): ToolsDef {
         name: 'fetch-current-weather',
         config: {
             title: 'Current Weather Fetcher',
-            description: 'Gets the current weather for an optional location.',
+            description: 'Gets the current weather for a given location.',
             inputSchema: {
                 location: z.optional(
                     z.string({ description: 'Location to search for current weather' })
