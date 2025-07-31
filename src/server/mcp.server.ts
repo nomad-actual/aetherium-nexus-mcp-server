@@ -7,6 +7,7 @@ import type { ToolsDef, AetheriumConfig } from '../types.js'
 import { buildTimeTool } from '../providers/time.js'
 import { buildWebSearchTool } from '../providers/websearch.js'
 import { buildPackageTrackingTool } from '../providers/trackpackage.js'
+import { buildWebScraperTool } from '../providers/website-scraper.js'
 
 const toolsDef: ToolsDef[] = [
     buildCurrentWeatherTool(),
@@ -14,13 +15,15 @@ const toolsDef: ToolsDef[] = [
     buildTimeTool(),
     buildWebSearchTool(),
     buildPackageTrackingTool(),
+    buildWebScraperTool(),
 ]
 
+
 export function buildMCPServer(config: AetheriumConfig): McpServer {
-    const server = new McpServer(
-        {
+    const mcpServerInstance = new McpServer(
+        { 
             name: config.mcpServer.title,
-            version: '1.0.0', // todo config?
+            version: '1.0.0',
             title: config.mcpServer.title,
         },
         {
@@ -30,10 +33,10 @@ export function buildMCPServer(config: AetheriumConfig): McpServer {
 
     toolsDef.forEach((tool) => {
         // seems like can pass handler for progress updates as well
-        server.registerTool(tool.name, tool.config, tool.handler)
+        mcpServerInstance.registerTool(tool.name, tool.config, tool.handler)
     })
 
     // todo add resources and such later?
 
-    return server
+    return mcpServerInstance
 }

@@ -5,7 +5,7 @@ import z from 'zod';
 import { AetheriumConfig, ToolsDef } from '../types';
 import { getConfig } from '../utils/config';
 import logger from '../utils/logger';
-import { screenshotBrowser } from "../utils/webscraper";
+import { screenshotWebPage } from "../utils/webscraper";
 
 
 function trackOnePackage(packageNumber: string, config: AetheriumConfig): TrackingNumber | null {
@@ -19,18 +19,17 @@ function trackOnePackage(packageNumber: string, config: AetheriumConfig): Tracki
 
 
 async function trackPakages(args: { packages: string[] }, config: AetheriumConfig): Promise<CallToolResult> {
+    const packages = new Set(args.packages || [])
 
-    const packages = args.packages || []
-
-    if (packages.length === 0) {
+    if (packages.size === 0) {
         return { content: [{ type: 'text', text: 'No packages provided' }] }
     }
 
-    // max of a few (probably 5) packages to track
-    const maxPackages = 5
+    // todo config max of a few (probably 5) packages to track
+    const maxPackages = 10
 
-    if (packages.length > maxPackages) {
-        return { content: [{ type: 'text', text: `Too many packages provided. Please provide up to ${maxPackages} packages.` }] }
+    if (packages.size > maxPackages) {
+        return { content: [{ type: 'text', text: `Too many packages (${packages.size}) provided. Please provide up to ${maxPackages} packages.` }] }
     }
 
     const results: any[] = []
@@ -49,7 +48,7 @@ async function trackPakages(args: { packages: string[] }, config: AetheriumConfi
 
         // some websites take a long time to render...
         const options = { width: 1280, height: 1200, timeout: 30_000 }
-        const screenshot = await screenshotBrowser(urlToScrape, options)
+        const screenshot = await screenshotWebPage(urlToScrape, options)
 
         const trackingContent = {
             trackingNumber: trackingInfo.trackingNumber,
@@ -61,22 +60,20 @@ async function trackPakages(args: { packages: string[] }, config: AetheriumConfi
         results.push({
             type: 'image',
             data: screenshot, // base64 encoded image data
-            mimeType: 'image/png',
+            mimeType: 'image/png', // todo: config + function to convert
             annotations: {
                 'audience': ['user'],
                 'priority': 0.9,
             }
         })
-
     }
 
     return {
         content: [
-            { type: 'text', text: `Found ${packages.length} packages` },
+            { type: 'text', text: `Found ${packages.size} packages` },
             ...results,
         ]
     }
-
 }
 
 

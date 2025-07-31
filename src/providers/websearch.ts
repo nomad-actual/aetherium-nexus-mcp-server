@@ -73,25 +73,40 @@ export async function search(args: any, config: AetheriumConfig): Promise<CallTo
     const promisesResults = await Promise.allSettled(scrapePromises)
     
     const duration = ((Date.now() - start) / 1000).toFixed(2)
-    const contentArr: any[] = [{
-        type: 'text',
-        text: `Found the following results in ${duration} seconds.`
-    }]
+    const contentArr: any[] = []
+
+    // just here to hold some basic info
+    let metadata: object[] = []
 
     promisesResults.forEach((result) => {
         if (result.status === 'fulfilled' && result.value !== null) {
-            const content = result.value
+            const scrapeObj = result.value
+
+            metadata.push({title: scrapeObj.title,
+            siteName: scrapeObj.siteName,
+            scrapeDuration: scrapeObj.scrapeDuration,})
 
             const toolResult = {
-                title: content.title,
-                siteName: content.siteName,
-                url: content.url,
-                content: content.content,
-                published: content.publishedTime,
+                title: scrapeObj.title,
+                siteName: scrapeObj.siteName,
+                url: scrapeObj.url,
+                content: scrapeObj.content,
+                published: scrapeObj.publishedTime,
+                scrapeDuration: scrapeObj.scrapeDuration,
             }
             
             contentArr.push({ type: 'text', text: JSON.stringify(toolResult) })
         }
+    })
+
+    if (contentArr.length === 0) {
+        return { content: [{ type: 'text', text: 'No results found. Recommend changing query and trying again.' }] }
+    }
+
+    contentArr.unshift({
+        type: 'text',
+        text: `Found the following ${contentArr.length} results in ${duration} seconds.`,
+        durations: metadata,
     })
 
     return { content: contentArr }

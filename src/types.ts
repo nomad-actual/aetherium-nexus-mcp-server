@@ -116,6 +116,7 @@ export type ReadableWebpageContent = {
     siteName: string;
     lang: string;
     publishedTime: string;
+    scrapeDuration: string;
 }
 
 export type ToolsDef = {

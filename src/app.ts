@@ -8,13 +8,30 @@ import logger from './utils/logger.js'
 
 const config: AetheriumConfig = getConfig()
 
+const corsAllowed = [
+    '127.0.0.1',
+    'localhost',
+    'https://homelab.ist',
+    'https://ai.homelab.ist',
+]
+
 const app = express()
 app.use(express.json())
 app.use(
     cors({
-        origin: config.mcpServer.cors,
+        origin: function (origin: string | undefined, callback) {
+            const safeOrigin = origin || ''
+            const allowed = corsAllowed.findIndex(o => o === safeOrigin || safeOrigin.includes(o || ''))
+            console.log(origin || 'jlhsafldjfhljhdsflasldjh')
+
+            if (allowed >= 0) {
+                callback(null, true)
+            } else {
+                callback(new Error('Not allowed by CORS'))
+            }
+        },
         exposedHeaders: ['Mcp-Session-Id'],
-        allowedHeaders: ['Content-Type', 'mcp-session-id'],
+        allowedHeaders: ['Content-Type', 'mcp-session-id', 'mcp-protocol-version'],
     })
 )
 
@@ -28,10 +45,12 @@ app.post('/mcp', async (req: Request, res: Response) => {
 
         const server = buildMCPServer(config)
 
-        const transport: StreamableHTTPServerTransport =
-            new StreamableHTTPServerTransport({
-                sessionIdGenerator: undefined,
-            })
+        const transport = new StreamableHTTPServerTransport({
+            sessionIdGenerator: undefined,
+            enableDnsRebindingProtection: true,
+            allowedHosts: ['127.0.0.1', 'localhost:3000', 'http://localhost', 'https://ai.homelab.ist'],
+            allowedOrigins: ['https://ai.homelab.ist', 'http://localhost', 'http://localhost:5173']
+        })
 
         res.on('close', () => {
             logger.info('Request closed')
@@ -42,7 +61,7 @@ app.post('/mcp', async (req: Request, res: Response) => {
         await server.connect(transport)
         await transport.handleRequest(req, res, req.body)
     } catch (error) {
-        logger.error('Error handling MCP request:', error)
+        logger.error({ message: 'Error handling MCP request', error })
 
         if (!res.headersSent) {
             res.status(500).json({

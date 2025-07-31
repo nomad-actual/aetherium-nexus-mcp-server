@@ -355,6 +355,7 @@ async function weatherForecastToolHandler({ location }: any, config: AetheriumCo
 
 }
 
+// todo: separate this out but it's ok for now
 export function buildCurrentWeatherTool(): ToolsDef {
     return {
         name: 'fetch-current-weather',
@@ -379,6 +380,7 @@ export function buildCurrentWeatherTool(): ToolsDef {
     }
 }
 
+// todo: separate this out but it's ok for now
 export function buildForecastTool(): ToolsDef {
     return {
         name: 'fetch-weather-forecast',

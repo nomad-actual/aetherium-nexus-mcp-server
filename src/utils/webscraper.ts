@@ -10,10 +10,10 @@ type ScreenShotOptions = {
     height: number;
     timeout: number;
     quality?: number; // only applies to jpg
-    format?: 'jpeg' | 'png';
+    format?: 'jpeg' | 'png' | 'webp';
 }
 
-export async function screenshotBrowser(url: string, screenshotOptions: ScreenShotOptions) {
+export async function screenshotWebPage(url: string, screenshotOptions: ScreenShotOptions) {
     let browser = null
     
     try {
@@ -24,12 +24,15 @@ export async function screenshotBrowser(url: string, screenshotOptions: ScreenSh
             height: screenshotOptions.height
         })
 
+        // get around bot detection
         await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.109 Safari/537.36');
         
         await page.goto(url, { waitUntil: 'networkidle0', timeout: screenshotOptions.timeout })
         await page.content()
 
         const data = await page.screenshot({
+            type: screenshotOptions.format || 'png',
+            quality: screenshotOptions.quality || 70, // really only applies to jpgs
             optimizeForSpeed: true,
             captureBeyondViewport: true,
             encoding: 'base64',
@@ -48,6 +51,7 @@ export async function screenshotBrowser(url: string, screenshotOptions: ScreenSh
 }
 
 export async function scrapeWebPage(url: string, options: ScrapeOptions): Promise<ReadableWebpageContent | null> {
+    const startTime = Date.now();
     const virtualConsole = new VirtualConsole();
     // to ignore css parsing errors
     virtualConsole.on('error', err => console.log('looool', err))
@@ -71,12 +75,14 @@ export async function scrapeWebPage(url: string, options: ScrapeOptions): Promis
         return null
     }
 
+    const duration = ((Date.now() - startTime) / 1000).toFixed(2)
+
     const {
         title,
         lang,
         textContent,
         siteName = '',
-        publishedTime = ''
+        publishedTime = '',
     } = html
 
     // cleanup content
@@ -105,6 +111,7 @@ export async function scrapeWebPage(url: string, options: ScrapeOptions): Promis
         lang: lang || '', 
         content: processedTextContent,
         siteName: siteName || altSiteName,
-        publishedTime: publishedTime || 'Published Date not found'
+        publishedTime: publishedTime || 'Published Date not found',
+        scrapeDuration: duration,
     }
 }

@@ -5,6 +5,4 @@ const logger: Logger = pino({
   redact: [], // prevent logging of sensitive data
 });
 
-
-// export
 export default logger;
