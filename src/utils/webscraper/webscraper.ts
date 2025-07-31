@@ -1,8 +1,5 @@
 import puppeteer from 'puppeteer'
-import { JSDOM, VirtualConsole } from 'jsdom'
-import { Readability  } from '@mozilla/readability';
-import { capitalizeFirstLetter } from '../formatter';
-import { ReadableWebpageContent, ScrapeOptions } from '../../types';
+import { ScrapeOptions } from '../../types';
 import logger from '../logger';
 import BasicHtmlScraper from './BasicHtmlScraper';
 import RedditScraper from './RedditScraper';
