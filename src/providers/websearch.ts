@@ -1,13 +1,10 @@
 import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import axios from 'axios';
 import z from 'zod';
-import { JSDOM, VirtualConsole } from 'jsdom'
-import { Readability, isProbablyReaderable  } from '@mozilla/readability';
 
-import { AetheriumConfig, ReadableWebpageContent, ToolsDef } from '../types';
+import { AetheriumConfig, ToolsDef } from '../types';
 import { getConfig } from '../utils/config';
-import logger from '../utils/logger';
-import { scrapeWebPage } from '../utils/webscraper';
+import { doWebScrape } from '../utils/webscraper/webscraper';
 
 type SearXNGResult = {
     url: string,
@@ -69,7 +66,7 @@ export async function search(args: any, config: AetheriumConfig): Promise<CallTo
         minReadableLength: 140
     }
 
-    const scrapePromises = filteredResults.map(result => scrapeWebPage(result.url, scrapeOpts))
+    const scrapePromises = filteredResults.map(result => doWebScrape(result.url, scrapeOpts))
     const promisesResults = await Promise.allSettled(scrapePromises)
     
     const duration = ((Date.now() - start) / 1000).toFixed(2)

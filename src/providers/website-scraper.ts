@@ -1,31 +1,11 @@
 import z from 'zod'
 import { AetheriumConfig, ToolsDef } from '../types'
 import { getConfig } from '../utils/config'
-import { scrapeReddit, scrapeWebPage } from '../utils/webscraper'
 import { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import logger from '../utils/logger'
+import { doWebScrape } from '../utils/webscraper/webscraper'
 
-function augmentScrapingUrl(url: string): string {
-    logger.info(`Augmenting URL ${url}...`)
-
-    if (
-        url.startsWith('https://www.reddit.com') &&
-        url.includes('/comments/')
-    ) {
-        // remove trailing slash if present at final character
-        if (url.endsWith('/')) {
-            url = url.slice(0, -1)
-        }
-        return `${url}.json`
-    }
-
-    return url
-}
-
-async function scrape(
-    args: { url: string },
-    config: AetheriumConfig
-): Promise<CallToolResult> {
+async function scrape(args: { url: string }, config: AetheriumConfig): Promise<CallToolResult> {
     try {
         logger.info(`Scraping webpage ${args.url}...`)
 
@@ -39,77 +19,9 @@ async function scrape(
             minReadableLength: 140,
         }
 
-        // augment reddit here
-        const augmentedUrl = augmentScrapingUrl(args.url)
-
-        // todo: hacky
-        if (args.url !== augmentedUrl) {
-            const redditResp = (await scrapeReddit(augmentedUrl, scrapeOpts)) || []
-
-            // todo hacky again but fine for now
-            if (Array.isArray(redditResp)) {
-                const [redditData] = redditResp
-                const comments = redditResp.slice(1)
-
-                const metadata = `Main Content for: ${args.url} Language: ${
-                    redditData?.lang || '(Not found)'
-                } Date Published: ${redditData?.publishedTime} Site Name: ${
-                    redditData?.siteName
-                } Title: ${redditData?.title}`
-
-                const content: any = [
-                    { type: 'text', text: metadata },
-                    { type: 'text', text: JSON.stringify(redditData || '') },
-                ]
-
-                const formattedContent = comments.map((comment) => {
-                    const commentContent = `Reddit comment for: ${comment.url} Date Published: ${comment?.publishedTime} Comment Content: ${comment.content}`
-
-                    return { type: 'text', text: commentContent }
-                })
-
-                content.push(
-                    {
-                        type: 'text',
-                        text: 'Comments for post follow from here---',
-                    },
-                    ...formattedContent
-                )
-
-                return {
-                    content,
-                }
-            }
-        }
-
-        const webContent = await scrapeWebPage(augmentedUrl, scrapeOpts)
-
-        if (!webContent) {
-            logger.warn('No content found on webpage:', augmentedUrl)
-            return {
-                content: [
-                    {
-                        type: 'text',
-                        text: `No content found for webpage: ${augmentedUrl}`,
-                    },
-                ],
-            }
-        }
-
-        const metadata = `Content for: ${webContent.url}\nLanguage: ${
-            webContent.lang || '(Not found)'
-        }\nDate Published: ${webContent.publishedTime}\nSite Name: ${
-            webContent.siteName
-        }\nTitle: ${webContent.title}`
-
-        return {
-            content: [
-                { type: 'text', text: metadata },
-                { type: 'text', text: webContent.content },
-            ],
-        }
+        return doWebScrape(args.url, scrapeOpts)
     } catch (error) {
-        // handle errors better
+        // todo: handle errors better (aka the mcp way)
         logger.error({ message: 'Error scraping web page:', error })
         throw error
     }

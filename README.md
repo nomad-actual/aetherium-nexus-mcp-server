@@ -20,6 +20,7 @@ My collection of MCP tools
 - [x] improve accuracy of package screenshots? perhaps reduce viewport size
 - [x] search results sometimes return nothing useful
 - [x] basic reddit-specific scraping by adding .json to the end of the thread
+- [x] make scraper more modular with fallbacks
 
 ### In Progress
 

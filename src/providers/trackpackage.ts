@@ -5,7 +5,7 @@ import z from 'zod';
 import { AetheriumConfig, ToolsDef } from '../types';
 import { getConfig } from '../utils/config';
 import logger from '../utils/logger';
-import { screenshotWebPage } from "../utils/webscraper";
+import { screenshotWebPage } from '../utils/webscraper/webscraper';
 
 
 function trackOnePackage(packageNumber: string, config: AetheriumConfig): TrackingNumber | null {
