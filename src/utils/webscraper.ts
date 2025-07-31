@@ -4,6 +4,7 @@ import { Readability, isProbablyReaderable  } from '@mozilla/readability';
 import { capitalizeFirstLetter } from './formatter';
 import { ReadableWebpageContent, ScrapeOptions } from '../types';
 import logger from './logger';
+import axios from 'axios';
 
 type ScreenShotOptions = {
     width: number;
@@ -50,6 +51,82 @@ export async function screenshotWebPage(url: string, screenshotOptions: ScreenSh
     }
 }
 
+
+export async function scrapeReddit(url: string, options: ScrapeOptions): Promise<ReadableWebpageContent[] | null> {
+    const startTime = Date.now();
+
+    const resp = await axios.request({
+        method: 'GET',
+        url,
+    })
+
+    if (resp.status !== 200) {
+        logger.error(`Failed to fetch Reddit page at ${url}. Status code: ${resp.status}`)
+        return null;
+    }
+
+    const data = resp.data;
+
+    // determine if reddit data is valid, can always fall back to html
+    const mainPosting = data[0]?.data?.children[0]?.data;
+    if (!mainPosting) {
+        return null
+    }
+
+    const author = mainPosting.author;
+    const content = mainPosting.selftext;
+    const title = `Posted by: ${author}: ${mainPosting.title}`;
+    const postedDate = new Date(mainPosting.created_utc * 1000);
+
+    const stuff: ReadableWebpageContent = {
+        content,
+        title,
+        lang: 'Unknown',
+        publishedTime: postedDate.toISOString(),
+        siteName: 'Reddit',
+        url,
+        scrapeDuration: `${(Date.now() - startTime) / 1000} seconds`,
+    }
+
+    // does not parse replies butmain post is more important for now
+    // todo: parse replies
+    const comments = data[1]?.data?.children.map((child: any) => {
+        const comment = child.data;
+
+        // max length applies here
+        const content = comment.body;
+        const author = comment.author;
+        const commentUrl = `https://www.reddit.com${comment.permalink}`;
+        const postedDate = new Date(comment.created_utc * 1000);
+
+        const stuff: ReadableWebpageContent = {
+            content,
+            title: `Comment author: ${author}`,
+            lang: 'Unknown',
+            publishedTime: postedDate.toISOString(),
+            siteName: 'Reddit',
+            url: commentUrl,
+            scrapeDuration: `${(Date.now() - startTime) / 1000} seconds`,
+        }
+
+        return stuff
+    })
+
+    return [stuff, ...comments]
+
+
+
+    // so presently
+    // there are two listings
+    // 0 is main post
+    // so
+    // content: 0 -> data -> children -> 0 -> selftext
+    // title: 0 -> data -> children -> 0 -> title
+    
+    // 1 is comments which might be useful to send back
+}
+
+
 export async function scrapeWebPage(url: string, options: ScrapeOptions): Promise<ReadableWebpageContent | null> {
     const startTime = Date.now();
     const virtualConsole = new VirtualConsole();
@@ -57,21 +134,13 @@ export async function scrapeWebPage(url: string, options: ScrapeOptions): Promis
     virtualConsole.on('error', err => console.log('looool', err))
 
     const dom = await JSDOM.fromURL(url, { virtualConsole })
+    logger.info({ message: `Scraping ${url}...`, dom })
+
     const reader = new Readability(dom.window.document)
-
-    const readableOpts = {
-        minContentLength: options.minReadableLength,
-        minScore: options.minScore
-    }
-
-    if (!isProbablyReaderable(dom.window.document, readableOpts)) {
-        logger.warn(`Skipping non-readerable page ${url}`)
-        return null
-    }
 
     const html = reader.parse()
     if (!html) {
-        logger.error(`Failed to parse HTML from ${url}`)
+        logger.error(`No content from ${url} to parse`)
         return null
     }
 

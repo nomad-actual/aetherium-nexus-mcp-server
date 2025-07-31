@@ -19,12 +19,16 @@ My collection of MCP tools
 - [x] basic website scraper and summarizer
 - [x] improve accuracy of package screenshots? perhaps reduce viewport size
 - [x] search results sometimes return nothing useful
+- [x] basic reddit-specific scraping by adding .json to the end of the thread
+
+### In Progress
+
+- [ ] reddit comment parsing (no more than 3 levels deep and total of 10 comments per thread)
+- [ ] fix prod package tracker not taking screenshots because browser process won't start
 
 ### Todo
 
-- [ ] reddit scraping is trivial by adding .json to the end of the post
-- [ ] long scraping times should be aborted or some better UI/UX feedback should be employed
-- [ ] fix prod package tracker not taking screenshots because browser process won't start
+- [ ] long scraping times should be aborted or some other/better UI/UX feedback should be employed
 - [ ] Fix ghetto weather location lookups (no default)
 - [ ] Notes archive first embeddings
 - [ ] Documents via vector search
