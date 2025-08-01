@@ -21,6 +21,7 @@ My collection of MCP tools
 - [x] search results sometimes return nothing useful
 - [x] basic reddit-specific scraping by adding .json to the end of the thread
 - [x] make scraper more modular with fallbacks
+- [x] Web scraping building results returns the normal results without wrapping in ToolCallResult
 
 ### In Progress
 

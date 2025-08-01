@@ -119,6 +119,14 @@ export type ReadableWebpageContent = {
     scrapeDuration: string;
 }
 
+export type McpToolContent = {
+    type: 'text',
+    text: string,
+} | {
+    type: 'image',
+    image: string, // base64 encoded
+}
+
 export type ToolsDef = {
     name: string,
     config: any,

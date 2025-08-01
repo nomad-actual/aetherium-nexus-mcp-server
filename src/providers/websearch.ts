@@ -56,9 +56,10 @@ function filterSites(searchResults: SearXNGResult[], config: AetheriumConfig) {
 export async function search(args: any, config: AetheriumConfig): Promise<CallToolResult> {
     // crawl each site and retrieve html for summarization
     const start = Date.now()
-    const results = await searchForResults(args.query, config)
+    const searchResults = await searchForResults(args.query, config)
+    const searchDuration = ((Date.now() - start) / 1000)
 
-    const filteredResults = filterSites(results, config)
+    const filteredResults = filterSites(searchResults, config)
 
     const scrapeOpts = {
         maxContentLength: config.search.contentLimit,
@@ -68,45 +69,41 @@ export async function search(args: any, config: AetheriumConfig): Promise<CallTo
 
     const scrapePromises = filteredResults.map(result => doWebScrape(result.url, scrapeOpts))
     const promisesResults = await Promise.allSettled(scrapePromises)
-    
-    const duration = ((Date.now() - start) / 1000).toFixed(2)
+
+    const totalScrapeDuration = (((Date.now() - start) / 1000) - searchDuration).toFixed(2)
+
     const contentArr: any[] = []
 
-    // just here to hold some basic info
-    let metadata: object[] = []
-
     promisesResults.forEach((result) => {
-        if (result.status === 'fulfilled' && result.value !== null) {
-            const scrapeObj = result.value
-
-            metadata.push({title: scrapeObj.title,
-            siteName: scrapeObj.siteName,
-            scrapeDuration: scrapeObj.scrapeDuration,})
-
-            const toolResult = {
-                title: scrapeObj.title,
-                siteName: scrapeObj.siteName,
-                url: scrapeObj.url,
-                content: scrapeObj.content,
-                published: scrapeObj.publishedTime,
-                scrapeDuration: scrapeObj.scrapeDuration,
-            }
-            
-            contentArr.push({ type: 'text', text: JSON.stringify(toolResult) })
+        if (result.status === 'fulfilled' && (result.value !== null || Array.isArray(result.value))) {
+            contentArr.push(...result.value)
         }
     })
 
     if (contentArr.length === 0) {
-        return { content: [{ type: 'text', text: 'No results found. Recommend changing query and trying again.' }] }
+        return { 
+            content: [{ 
+                type: 'text', 
+                text: 'No results found. Recommend changing query and trying again.'
+            }]
+        }
     }
 
-    contentArr.unshift({
-        type: 'text',
-        text: `Found the following ${contentArr.length} results in ${duration} seconds.`,
-        durations: metadata,
-    })
+    // kinda ghetto but neat metadata to have
+    const results = [
+        {
+            type: 'text',
+            text: 
+            `Found ${
+                contentArr.length
+            } results in ${searchDuration.toFixed(2)}s. Scraped in ${totalScrapeDuration}s`
+        },
+        ...contentArr
+    ]
 
-    return { content: contentArr }
+    return {
+        content: results
+    }
 }
 
 

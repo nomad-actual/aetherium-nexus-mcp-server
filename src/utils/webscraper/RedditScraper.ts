@@ -1,5 +1,5 @@
 import { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import { ScrapeOptions, ReadableWebpageContent } from "../../types";
+import { ScrapeOptions, ReadableWebpageContent, McpToolContent } from "../../types";
 import { IScraper } from "./IScraper";
 import axios from "axios";
 import logger from "../../utils/logger";
@@ -84,7 +84,7 @@ export default class RedditScraper implements IScraper {
     }
 
     // todo: parse a number of levels deep
-    parseComments(comments: ReadableWebpageContent[]) {
+    parseComments(comments: ReadableWebpageContent[]): McpToolContent[]  {
         return comments.map((comment) => {
             const commentContent = 
                 `Reddit comment for: ${
@@ -99,7 +99,7 @@ export default class RedditScraper implements IScraper {
         })
     }
 
-    async buildResult(contents: ReadableWebpageContent[], scrapeOpts: ScrapeOptions): Promise<CallToolResult> {
+    async buildResult(contents: ReadableWebpageContent[], scrapeOpts: ScrapeOptions): Promise<McpToolContent[]> {
         const [redditData] = contents
         const comments = contents.slice(1)
 
@@ -114,17 +114,15 @@ export default class RedditScraper implements IScraper {
             redditData?.siteName
         } Title: ${
             redditData?.title
-        }`
+        } Scrape Duration (sec): ${redditData.scrapeDuration}`
 
-        const result: any = [
+        const result: any[] = [
             { type: 'text', text: metadata },
             { type: 'text', text: JSON.stringify(redditData || '') },
             { type: 'text', text: '--- Comments for post follow from here ---' },
             ...this.parseComments(comments),
         ]
 
-        return {
-            content: result,
-        }
+        return result
     }
 }

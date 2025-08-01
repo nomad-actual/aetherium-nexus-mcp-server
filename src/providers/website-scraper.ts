@@ -1,9 +1,9 @@
 import z from 'zod'
 import { AetheriumConfig, ToolsDef } from '../types'
 import { getConfig } from '../utils/config'
-import { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import logger from '../utils/logger'
 import { doWebScrape } from '../utils/webscraper/webscraper'
+import { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 
 async function scrape(args: { url: string }, config: AetheriumConfig): Promise<CallToolResult> {
     try {
@@ -19,7 +19,12 @@ async function scrape(args: { url: string }, config: AetheriumConfig): Promise<C
             minReadableLength: 140,
         }
 
-        return doWebScrape(args.url, scrapeOpts)
+        // hate the anys but the types in this are so bad
+        const contents = await doWebScrape(args.url, scrapeOpts) as any
+
+        return {
+            content: contents
+        }
     } catch (error) {
         // todo: handle errors better (aka the mcp way)
         logger.error({ message: 'Error scraping web page:', error })

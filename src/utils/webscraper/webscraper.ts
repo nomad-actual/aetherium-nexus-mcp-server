@@ -1,5 +1,5 @@
 import puppeteer from 'puppeteer'
-import { ScrapeOptions } from '../../types';
+import { McpToolContent, ReadableWebpageContent, ScrapeOptions } from '../../types';
 import logger from '../logger';
 import BasicHtmlScraper from './BasicHtmlScraper';
 import RedditScraper from './RedditScraper';
@@ -51,11 +51,15 @@ export async function screenshotWebPage(url: string, screenshotOptions: ScreenSh
 }
 
 
-export async function doWebScrape(url: string, scrapeOpts: ScrapeOptions): Promise<CallToolResult> {
-    const scrapers = [
+function getScrapers(url: string) {
+    return [
             new RedditScraper(),
             new BasicHtmlScraper()
     ].filter((scraper) => scraper.shouldAttempt(url))
+}
+
+export async function doWebScrape(url: string, scrapeOpts: ScrapeOptions): Promise<McpToolContent[]> {
+    const scrapers = getScrapers(url)
 
     // todo - failure handling - retry logic
     for (const scraper of scrapers) {
@@ -71,11 +75,6 @@ export async function doWebScrape(url: string, scrapeOpts: ScrapeOptions): Promi
 
     }
 
-    logger.warn('No content found on webpage:', url)
-    return {
-        content: [{
-            type: 'text',
-            text: `No content found for webpage: ${url}`,
-        }],
-    }
+    logger.warn(`No content found on webpage ${url}`)
+    return []
 }

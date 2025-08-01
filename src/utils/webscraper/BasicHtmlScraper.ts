@@ -1,8 +1,6 @@
-import { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
-import { ReadableWebpageContent, ScrapeOptions } from '../../types'
+import { McpToolContent, ReadableWebpageContent, ScrapeOptions } from '../../types'
 import { IScraper } from './IScraper'
 import { Readability } from '@mozilla/readability'
-import { options } from 'axios'
 import { capitalizeFirstLetter } from '../formatter'
 import logger from '../logger'
 import { JSDOM, VirtualConsole } from 'jsdom'
@@ -69,13 +67,11 @@ export default class BasicHtmlScraper implements IScraper {
         }]
     }
 
-    async buildResult(
-        contents: ReadableWebpageContent[],
-        scrapeOpts: ScrapeOptions
-    ): Promise<CallToolResult> {
+    async buildResult(contents: ReadableWebpageContent[], scrapeOpts: ScrapeOptions): Promise<McpToolContent[]> {
         const [page] = contents
 
-        const metadata = `Content for: ${
+        const metadata = 
+        `Content for: ${
             page.url
         } Language: ${
             page.lang || '(Not found)'
@@ -85,14 +81,14 @@ export default class BasicHtmlScraper implements IScraper {
             page.siteName
         } Title: ${
             page.title
+        } Scrape Duration (sec): ${
+            page.scrapeDuration || 'Unknown'
         }`
 
-        return {
-            content: [
-                { type: 'text', text: metadata },
-                { type: 'text', text: page.content },
-            ],
-        }
+        return [
+            { type: 'text', text: metadata },
+            { type: 'text', text: page.content },
+        ]
     }
 
     // just everything is ok
