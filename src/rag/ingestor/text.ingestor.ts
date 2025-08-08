@@ -24,9 +24,7 @@ const chunkOverlap = Math.floor(chunkSize * chunkOverlapPercent);
 export async function ingest(filePath: string): Promise<string[]> {
     const fileExt = path.extname(filePath).toLowerCase();
 
-    console.log('Chunking file:', filePath)
-
-
+    console.log('Ingesting file:', filePath)
 
     // todo: just object with file ext -> function
     if (fileExt.toLowerCase() === '.md') {

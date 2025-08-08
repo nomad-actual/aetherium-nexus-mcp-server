@@ -53,10 +53,10 @@ export function getConfig(): AetheriumConfig {
     }
 
     const ragConfig = {
-        limitResults: 5,
-        semanticSearchEnabled: false, // must have semanticSearchModel set
-        directoriesToIngest: (process.env.RAG_DIRECTORIES_TO_INGEST || '').split('|'),
-        supportedFileExts: (process.env.RAG_FILE_EXT_FILTERS || '').split('|'),
+        limitResults: parseInt(process.env.RAG_LIMIT_RESULTS || '10', 10),
+        semanticSearchEnabled: process.env.SEMANTIC_SEARCH_ENABLED === 'true', // must have semanticSearchModel set
+        directoriesToIngest: (process.env.RAG_SOURCE_DIRECTORIES || '').split('|'),
+        supportedFileExts: (process.env.RAG_INCLUDE_FILE_EXT || '').split('|'),
         maxFileSizeMB: parseInt(process.env.RAG_MAX_FILE_SIZE_MB || '', 10) || 10,
         ignoreDirs: (process.env.RAG_IGNORE_DIRS || '').split('|'),
     }

@@ -28,6 +28,7 @@ async function findFiles(fp: string, config: AetheriumConfig) {
 }
 
 export async function buildEmbeddings(config: AetheriumConfig) {
+    console.log(config.rag)
     const dir = config.rag.directoriesToIngest[0]
     const files = await findFiles(dir, config)
 
