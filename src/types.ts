@@ -77,28 +77,48 @@ export type AetheriumLocaleOptions = {
         is24HourTime: boolean
 }
 
+export type RagIndexingOpts = {
+    limitResults: number,
+    semanticSearchEnabled: boolean,
+    directoriesToIngest: string[],
+    supportedFileExts: string[],
+    maxFileSizeMB: number,
+    ignoreDirs: string[]
+}
+
+export type LlmClientOptions = {
+    type: string | 'ollama'
+    host: string
+    embeddingModel: string
+    embeddingModelContext: number
+    semanticSearchModel: string
+    semanticSearchModelContext: number
+}
+
 export type AetheriumConfig = {
+    llmClient: LlmClientOptions,
+    rag: RagIndexingOpts,
     mcpServer: {
-        port: number,
-        host: string,
-        cors: string[],
-        title: string,
+        port: number
+        host: string
+        cors: string[]
+        title: string
     },
     defaultLocation: {
-        lat: number,
-        lon: number,
+        lat: number
+        lon: number
         timezone: string
     },
     timeserver: { 
-        host: string,
-        port: number,
+        host: string
+        port: number
         timeout: number
     },
     search: {
         host: string,
-        timeout: number,
-        contentLimit: number,
-        maxResults: number,
+        timeout: number
+        contentLimit: number
+        maxResults: number
     },
     locale: AetheriumLocaleOptions,
 }
@@ -127,9 +147,31 @@ export type McpToolContent = {
     image: string, // base64 encoded
 }
 
+export type RagSearchQuery = {
+    query: string
+    resultsLimit: number
+    maxContext: number,
+    embeddingModel: string
+    semanticRankingModel: string
+}
+
+export type RagSearchResultMetadata = {
+    uri: string
+    cosineSimilarityScore: number // 0-1
+    vector: number[]
+    bm25Score?: number, // 0-1
+    semanticScore: 0 | 1,
+    embeddingId: string, // uuid to id the embedding uniquely especially when combined with uri
+}
+
+export type RagSearchResult = {
+    content: string
+    metadata: RagSearchResultMetadata
+}
+
 export type ToolsDef = {
-    name: string,
-    config: any,
-    handler(args: any): Promise<CallToolResult>,
+    name: string
+    config: any
+    handler(args: any): Promise<CallToolResult>
 }
 

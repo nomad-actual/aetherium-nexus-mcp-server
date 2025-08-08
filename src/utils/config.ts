@@ -43,7 +43,27 @@ export function getConfig(): AetheriumConfig {
     const searchContentLimit = parseInt(process.env.SEARCH_PAGE_CONTENT_LIMIT || '', 10) || 5_000
     const maxResults = parseInt(process.env.SEARCH_MAX_RESULTS || '', 10) || 5
 
+    const llmClient = {
+        type: 'ollama',
+        host: process.env.LLM_HOST || 'localhost',
+        embeddingModel: process.env.EMBEDDING_MODEL || '',
+        embeddingModelContext: parseInt(process.env.EMBEDDING_MODEL_CONTEXT || '', 10) || 512,
+        semanticSearchModel: process.env.SEMANTIC_SEARCH_MODEL || '',
+        semanticSearchModelContext: parseInt(process.env.SEMANTIC_SEARCH_MODEL_CONTEXT || '', 10) || 512,
+    }
+
+    const ragConfig = {
+        limitResults: 5,
+        semanticSearchEnabled: false, // must have semanticSearchModel set
+        directoriesToIngest: (process.env.RAG_DIRECTORIES_TO_INGEST || '').split('|'),
+        supportedFileExts: (process.env.RAG_FILE_EXT_FILTERS || '').split('|'),
+        maxFileSizeMB: parseInt(process.env.RAG_MAX_FILE_SIZE_MB || '', 10) || 10,
+        ignoreDirs: (process.env.RAG_IGNORE_DIRS || '').split('|'),
+    }
+
     config = {
+        llmClient: llmClient,
+        rag: ragConfig,
         mcpServer: {
             port: mcpServerPort,
             host: mcpServerHost,

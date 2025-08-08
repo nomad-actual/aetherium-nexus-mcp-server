@@ -1,8 +1,8 @@
 import z from 'zod'
-import { AetheriumConfig, ToolsDef } from '../types'
-import { getConfig } from '../utils/config'
-import logger from '../utils/logger'
-import { doWebScrape } from '../utils/webscraper/webscraper'
+import { AetheriumConfig, ToolsDef } from '../types.js'
+import { getConfig } from '../utils/config.js'
+import logger from '../utils/logger.js'
+import { doWebScrape } from '../utils/webscraper/webscraper.js'
 import { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 
 async function scrape(args: { url: string }, config: AetheriumConfig): Promise<CallToolResult> {

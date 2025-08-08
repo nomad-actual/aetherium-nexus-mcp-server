@@ -1,8 +1,8 @@
-import { McpToolContent, ReadableWebpageContent, ScrapeOptions } from '../../types'
-import { IScraper } from './IScraper'
+import { McpToolContent, ReadableWebpageContent, ScrapeOptions } from '../../types.js'
+import { IScraper } from './IScraper.js'
 import { Readability } from '@mozilla/readability'
-import { capitalizeFirstLetter } from '../formatter'
-import logger from '../logger'
+import { capitalizeFirstLetter } from '../formatter.js'
+import logger from '../logger.js'
 import { JSDOM, VirtualConsole } from 'jsdom'
 
 

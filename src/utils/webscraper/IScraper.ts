@@ -1,4 +1,4 @@
-import { McpToolContent, ReadableWebpageContent, ScrapeOptions } from "../../types";
+import { McpToolContent, ReadableWebpageContent, ScrapeOptions } from "../../types.js";
 
 
 export interface IScraper {

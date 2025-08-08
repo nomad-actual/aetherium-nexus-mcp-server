@@ -1,8 +1,8 @@
 import { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import { ScrapeOptions, ReadableWebpageContent, McpToolContent } from "../../types";
-import { IScraper } from "./IScraper";
+import { ScrapeOptions, ReadableWebpageContent, McpToolContent } from "../../types.js";
+import { IScraper } from "./IScraper.js";
 import axios from "axios";
-import logger from "../../utils/logger";
+import logger from "../../utils/logger.js";
 
 
 export default class RedditScraper implements IScraper {

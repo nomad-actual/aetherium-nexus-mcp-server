@@ -10,8 +10,8 @@ export async function search(query: string, { limit = 10, language = 'en' }): Pr
     const locationResp = await axios.get(url, {
         params: { 
             name: query,
-            count: limit || 10,
-            language: 'en',
+            count: limit,
+            language: language,
             format: 'json',
         }
     })

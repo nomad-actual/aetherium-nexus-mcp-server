@@ -66,3 +66,6 @@ typings/
 
 # vs code ignore
 .vscode/
+
+# fake db
+embeddings*.json

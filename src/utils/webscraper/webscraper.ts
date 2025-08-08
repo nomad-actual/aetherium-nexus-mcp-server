@@ -1,8 +1,8 @@
 import puppeteer from 'puppeteer'
-import { McpToolContent, ReadableWebpageContent, ScrapeOptions } from '../../types';
-import logger from '../logger';
-import BasicHtmlScraper from './BasicHtmlScraper';
-import RedditScraper from './RedditScraper';
+import { McpToolContent, ReadableWebpageContent, ScrapeOptions } from '../../types.js';
+import logger from '../logger.js';
+import BasicHtmlScraper from './BasicHtmlScraper.js';
+import RedditScraper from './RedditScraper.js';
 import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 
 type ScreenShotOptions = {

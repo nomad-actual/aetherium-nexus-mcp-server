@@ -6,6 +6,8 @@ import { getConfig } from './utils/config.js'
 import type { AetheriumConfig } from './types.js'
 import logger from './utils/logger.js'
 
+import { buildEmbeddings } from './rag/indexer.js'
+
 const config: AetheriumConfig = getConfig()
 
 const corsAllowed = [
@@ -22,7 +24,6 @@ app.use(
         origin: function (origin: string | undefined, callback) {
             const safeOrigin = origin || ''
             const allowed = corsAllowed.findIndex(o => o === safeOrigin || safeOrigin.includes(o || ''))
-            console.log(origin || 'jlhsafldjfhljhdsflasldjh')
 
             if (allowed >= 0) {
                 callback(null, true)
