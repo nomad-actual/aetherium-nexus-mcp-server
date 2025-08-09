@@ -29,6 +29,11 @@ export function formatDateTime(date: Date, localeOpts: AetheriumLocaleOptions, t
     return formatter.format(date)
 }
 
+export function formatDuration(startTimestamp: number) {
+    const duration = (Date.now() - startTimestamp) / 1000
+    return `${duration}s`
+}
+
 export function formatTime(date: Date, localeOpts: AetheriumLocaleOptions) {
     return date.toLocaleString(localeOpts.region, { hour: 'numeric', minute: 'numeric' })
 }

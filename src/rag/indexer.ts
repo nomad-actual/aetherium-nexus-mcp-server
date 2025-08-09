@@ -4,10 +4,10 @@ import { Ollama } from 'ollama'
 import { ingest } from './ingestor/text.ingestor.js';
 import { getConfig } from '../utils/config.js';
 import { AetheriumConfig } from '../types.js';
+import { getRagDatastore } from './database/datastore.js';
 
-
+// todo: move to some AI client module
 const ollamaClient = new Ollama({ host: getConfig().llmClient.host })
-
 
 async function findFiles(fp: string, config: AetheriumConfig) {
     const fileObjs = await fs.readdir(fp, { withFileTypes: true, recursive: true })
@@ -32,7 +32,7 @@ export async function buildEmbeddings(config: AetheriumConfig) {
     const dir = config.rag.directoriesToIngest[0]
     const files = await findFiles(dir, config)
 
-    const db = []
+    const ragDataStore = await getRagDatastore(config)
 
     let fileCounter = 0
     for (const file of files) {
@@ -45,6 +45,8 @@ export async function buildEmbeddings(config: AetheriumConfig) {
         if (!chunked.length) {
             continue;
         }
+
+        const embeddingBatch = []
 
         for (let i = 0; i < chunked.length; i++) {
             const toProcess = chunked[i]
@@ -60,16 +62,10 @@ export async function buildEmbeddings(config: AetheriumConfig) {
                     },
                 })
 
-                const [chunkEmbedding] = embeddings.embeddings
-
-                db.push({
+                embeddingBatch.push({
                     content: toProcess,
-                    metadata: {
-                        filePath: filePath,
-                        embeddingId: crypto.randomUUID(),
-                        // todo: titles and such (perhaps file date/time)
-                    },
-                    vector: chunkEmbedding,
+                    vector: embeddings.embeddings[0],
+                    uri: `file://${filePath}`,
                 })
 
                 console.log(`${i} / ${(chunked.length - 1) || 1} (chunk size: ${toProcess.length})`)
@@ -79,7 +75,7 @@ export async function buildEmbeddings(config: AetheriumConfig) {
             }
         }
 
-        await fs.writeFile('./embeddings.json', JSON.stringify(db))
+        await ragDataStore.batchSaveEmbeddings(embeddingBatch)
     }
 }
 

@@ -25,16 +25,16 @@ My collection of MCP tools
 
 ### In Progress
 
-- [ ] reddit comment parsing (no more than 3 levels deep and total of 10 comments per thread)
-- [ ] fix prod package tracker not taking screenshots because browser process won't start
+- [ ] basic RAG indexing and searching on some basic files
 
 ### Todo
 
+- [ ] reddit comment parsing (configurable levels deep and limit the total of 10 comments per thread)...though semantic parsing would be cool...as would using cheap vector searches and bm25 to quickly determine a potential relevance
+- [ ] fix prod package tracker not taking screenshots because browser process won't start
+- [ ] opensearch for rag instead of silly jsonfile-backed storage
 - [ ] long scraping times should be aborted or some other/better UI/UX feedback should be employed
 - [ ] Fix ghetto weather location lookups (no default)
 - [ ] Notes archive first embeddings
-- [ ] Documents via vector search
-- [ ] Tune search results performance (might be abort signals for extraction needed)
 - [ ] youtube summarizer
 
 ### Extra

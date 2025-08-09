@@ -78,11 +78,15 @@ export type AetheriumLocaleOptions = {
 }
 
 export type RagIndexingOpts = {
-    limitResults: number,
-    semanticSearchEnabled: boolean,
-    directoriesToIngest: string[],
-    supportedFileExts: string[],
-    maxFileSizeMB: number,
+    db: {
+        type: string, // 'json' | 'opensearch'
+        hostUri: string // file://path/to/file.json | http://localhost:9200
+    }
+    limitResults: number
+    semanticSearchEnabled: boolean
+    directoriesToIngest: string[]
+    supportedFileExts: string[]
+    maxFileSizeMB: number
     ignoreDirs: string[]
 }
 

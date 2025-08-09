@@ -1,32 +1,11 @@
-import fs from 'fs/promises'
 import { Ollama } from 'ollama'
-import { AetheriumConfig, RagSearchQuery, RagSearchResult, RagSearchResultMetadata } from '../types.js'
-import { cosineSimilarity } from "fast-cosine-similarity";
-import { BM25Retriever } from "@langchain/community/retrievers/bm25";
+import { AetheriumConfig, RagSearchResult } from '../types.js'
 import { getConfig } from '../utils/config.js';
+import { formatDuration } from '../utils/formatter.js';
+import { getRagDatastore } from './database/datastore.js';
 
-const ollamaClient = new Ollama({ host: 'http://ollama.homelab.ist:11434' })
+const ollamaClient = new Ollama({ host: getConfig().llmClient.host  })
 
-let fakeDb: DbEntry[] = []
-
-type DbEntry = {
-    content: string,
-    vector: number[],
-    metadata: {
-        filePath: string,
-        embeddingId: number,
-    }
-}
-
-async function getFakeDb(): Promise<DbEntry[]> {
-    if (!Object.keys(fakeDb).length) {
-        const file = await fs.readFile('./embeddings.json', 'utf-8')
-        const jsonEmbeddings = JSON.parse(file)
-        fakeDb = jsonEmbeddings;
-    }
-
-    return fakeDb;
-}
 
 async function makeRerankCall(userQuery: string, chunk: string, config: AetheriumConfig) {
     const rerankQuery =
@@ -71,82 +50,23 @@ Document: ${chunk}
     }
 }
 
-async function makeEmbedding(userQuery: string, embeddingModel: string, maxContext: number): Promise<number[][]> {
+async function makeEmbedding(userQuery: string, config: AetheriumConfig): Promise<number[][]> {
     const ollamaSearchInstruction = 
         `Instruct: Given a user search request, retrieve relevant passages that answer the query.\nQuery: ${userQuery}`
 
     // note: error on something larger than context size (other option is to truncate)
     // optionally we should break up the query if needed but this is fine for now
     const searchEmbedding = await ollamaClient.embed({
-        model: embeddingModel,
+        model: config.llmClient.embeddingModel,
         input: ollamaSearchInstruction,
         truncate: false,
         options: {
-            num_ctx: maxContext,
+            num_ctx: config.llmClient.embeddingModelContext,
         },
     })
 
     // log stats I guess
     return searchEmbedding.embeddings;
-}
-
-async function getBm25Results(entries: DbEntry[], userQuery: string): Promise<RagSearchResult[]> {
-    const bm25Docs = entries.map(entry => {
-        return {
-            pageContent: entry.content,
-            metadata: {
-                uri: `file://${entry.metadata.filePath}`,
-                vector: entry.vector,
-                cosineSimilarityScore: 0,
-                semanticScore: 0,
-                embeddingId: entry.metadata.embeddingId,
-            }
-        }
-    })
-
-    const engineOpts = {
-        k: entries.length,
-        includeScore: true
-    }
-
-    const bm25Engine = BM25Retriever.fromDocuments(bm25Docs, engineOpts)
-    const bmResults = await bm25Engine.invoke(userQuery)
-
-    return bmResults.map(result => {
-        return {
-            content: result.pageContent,
-            metadata: { ...result.metadata } as RagSearchResultMetadata,
-        }
-    })
-}
-
-
-async function doVectorSearch(query: string, config: AetheriumConfig, ragResults: RagSearchResult[]): Promise<RagSearchResult[]> {
-    const userQueryVector = await makeEmbedding(
-        query,
-        config.llmClient.embeddingModel,
-        config.llmClient.embeddingModelContext
-    );
-    
-    const vectorResults: RagSearchResult[] = ragResults.map(entry => {
-        const score = cosineSimilarity(userQueryVector[0], entry.metadata.vector)
-        
-        return {
-            content: entry.content,
-            metadata: {
-                uri: entry.metadata.uri || '',
-                cosineSimilarityScore: score,
-                bm25Score: entry.metadata.bm25Score || 0,
-                semanticScore: 0,
-                embeddingId: entry.metadata.embeddingId || '',
-                vector: []
-            }
-        }
-    })
-
-    return vectorResults.sort((a, b) => {
-        return b.metadata.cosineSimilarityScore - a.metadata.cosineSimilarityScore
-    })
 }
 
 async function doSemanticSearch(query: string, config: AetheriumConfig, ragResults: RagSearchResult[]): Promise<RagSearchResult[]> {
@@ -155,50 +75,7 @@ async function doSemanticSearch(query: string, config: AetheriumConfig, ragResul
         temp.metadata.semanticScore = semanticScore
     }
 
-    // not a fan but don't wanna copy
-    return ragResults
-}
-
-function getDurationDisplay(start: number): string {
-    return ((Date.now() - start) / 1000).toFixed(2) + 's'
-}
-
-export async function search(query: string, config: AetheriumConfig) {
-    if (!query.trim()) {
-        console.log('query is empty')
-        return []
-    }
-    const start = Date.now()
-    const db = await getFakeDb()
-
-    console.log('loaded db in', getDurationDisplay(start))
-
-    // consider doing in parallel by adding embedding chunkId to metadata so
-    // filePath + embedding chunkId is really unique so concurrent updates can be done easily to a map of id -> metadata
-
-    const bm25Start = Date.now()
-    const bm25Results = await getBm25Results(db, query)
-    const bm25Time = getDurationDisplay(bm25Start)
-
-    const vectorStart = Date.now()
-    const vectorResults = await doVectorSearch(query, config, bm25Results)
-    const vectorTime = getDurationDisplay(vectorStart)
-
-    console.log('\nbm25 results', bm25Results.slice(0, 3), '\n')
-    console.log('\nvector results', vectorResults.slice(0, 3), '\n')
-
-    const reducedVectorResults = vectorResults.slice(0, config.rag.limitResults)
-
-    let results = reducedVectorResults;
-    let semanticTime = 'Not enabled';
-    if (config.rag.semanticSearchEnabled) {
-        const semanticStart = Date.now()
-        results = await doSemanticSearch(query, config, reducedVectorResults)
-        semanticTime = getDurationDisplay(semanticStart)
-    }
-    
-
-    const finalResults = results.sort((a, b) => {
+    const finalResults = ragResults.sort((a, b) => {
         if (a.metadata.semanticScore !== b.metadata.semanticScore) {
             return b.metadata.semanticScore - a.metadata.semanticScore
         }
@@ -212,13 +89,45 @@ export async function search(query: string, config: AetheriumConfig) {
         return b.metadata.cosineSimilarityScore - a.metadata.cosineSimilarityScore
     })
 
+    return finalResults
+}
+
+export async function search(query: string, config: AetheriumConfig) {
+    if (!query.trim()) {
+        console.log('query is empty')
+        return []
+    } 
+    const start = Date.now()
+    const ragDataStore = await getRagDatastore(config)
+    console.log('Datastore loaded in ', formatDuration(start))
+
+    const baseSearchStart = Date.now()
+    const [userQueryVector] = await makeEmbedding(query, config);
+
+    let basicSearchResults = await ragDataStore.basicSearch(
+        query,
+        userQueryVector,
+        { limit: config.rag.limitResults, sortByClosestMatch: true }
+    )
+
+    const baseSearchTime = formatDuration(baseSearchStart)
+
+    let finalResults = basicSearchResults
+    const semanticStart = Date.now()
+
+    if (config.rag.semanticSearchEnabled) {
+        finalResults = await doSemanticSearch(query, config, basicSearchResults)
+    }
+    const semanticTime = formatDuration(semanticStart)
+    
+
     console.log(
         '----------------------------\n',
         finalResults,
         '\n\n',
         `User Query: "${query}"\n\n`,
-        `BM25 time: ${bm25Time}\nVector time: ${vectorTime}\nSemantic time: ${semanticTime}\n`,
-        `\nTotal search took ${getDurationDisplay(start)} seconds`,
+        `Basic search duration ${baseSearchTime}\nSemantic time: ${semanticTime}\n`,
+        `\nTotal search took ${formatDuration(start)}`,
         '\n\n',
     )
 
@@ -227,7 +136,7 @@ export async function search(query: string, config: AetheriumConfig) {
 
 // todo: config / userQuery
 const config = getConfig()
-const query = ''
+const query = 'homelab Hestia'
 
 search(query, config)
     .then(() => console.log('done'))

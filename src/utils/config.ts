@@ -53,6 +53,10 @@ export function getConfig(): AetheriumConfig {
     }
 
     const ragConfig = {
+        db: {
+            type: 'json',
+            hostUri: process.env.RAG_STORAGE_URI || ''
+        },
         limitResults: parseInt(process.env.RAG_LIMIT_RESULTS || '10', 10),
         semanticSearchEnabled: process.env.SEMANTIC_SEARCH_ENABLED === 'true', // must have semanticSearchModel set
         directoriesToIngest: (process.env.RAG_SOURCE_DIRECTORIES || '').split('|'),
