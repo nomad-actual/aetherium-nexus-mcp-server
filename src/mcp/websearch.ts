@@ -38,7 +38,6 @@ async function searchForResults(queryArg: string, config: AetheriumConfig): Prom
 function filterSites(searchResults: SearXNGResult[], config: AetheriumConfig) {
     // const badSites = [
     //     // 'reddit.com'
-    //     'ttettsdgsgsdgsdgsadsdfajhdf23487234'
     // ]
 
 
@@ -84,7 +83,7 @@ export async function search(args: any, config: AetheriumConfig): Promise<CallTo
         return { 
             content: [{ 
                 type: 'text', 
-                text: 'No results found. Recommend changing query and trying again.'
+                text: 'No results found. Recommend changing query and trying again.',
             }]
         }
     }

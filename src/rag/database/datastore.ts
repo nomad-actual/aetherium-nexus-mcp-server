@@ -22,7 +22,6 @@ export type TempDataStoreLookupEmbeddingOptions = {
 export interface RagDataStore {
     connect(): Promise<void>;
 
-
     // save embedding + metadata
     saveEmbedding(content: string, vector: number[], uri: string): Promise<void>;
 

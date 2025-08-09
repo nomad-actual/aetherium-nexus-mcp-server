@@ -9,6 +9,7 @@ export class JsonRagStore implements RagDataStore {
     private readonly dbFileLocation: string;
      
     constructor(dbFileLocation: string) {
+        // don't do this here...do it in the config on load
         this.dbFileLocation = dbFileLocation.replace('file://', '');
     }
 
