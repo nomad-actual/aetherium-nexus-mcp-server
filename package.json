@@ -23,6 +23,7 @@
     "@mastra/rag": "^1.0.7",
     "@modelcontextprotocol/sdk": "^1.17.2",
     "@mozilla/readability": "^0.6.0",
+    "@opensearch-project/opensearch": "^3.5.1",
     "axios": "^1.11.0",
     "clientside-search": "^1.8.1",
     "cors": "^2.8.5",

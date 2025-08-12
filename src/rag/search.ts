@@ -104,10 +104,11 @@ export async function search(query: string, config: AetheriumConfig) {
     const baseSearchStart = Date.now()
     const [userQueryVector] = await makeEmbedding(query, config);
 
+    const searchConf = { limit: config.rag.limitResults, sortByClosestMatch: true }
     let basicSearchResults = await ragDataStore.basicSearch(
         query,
         userQueryVector,
-        { limit: config.rag.limitResults, sortByClosestMatch: true }
+        searchConf
     )
 
     const baseSearchTime = formatDuration(baseSearchStart)
@@ -134,10 +135,9 @@ export async function search(query: string, config: AetheriumConfig) {
     return finalResults
 }
 
-// todo: config / userQuery
-const config = getConfig()
-const query = 'homelab Hestia'
+// const config = getConfig()
+// const query = 'homelab Hestia'
 
-search(query, config)
-    .then(() => console.log('done'))
-    .catch((err) => console.error(err))
+// search(query, config)
+//     .then(() => console.log('done'))
+//     .catch((err) => console.error(err))

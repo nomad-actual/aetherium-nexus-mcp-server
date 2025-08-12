@@ -69,3 +69,4 @@ typings/
 
 # fake db
 embeddings*.json
+temp.ts

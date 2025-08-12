@@ -54,7 +54,7 @@ export function getConfig(): AetheriumConfig {
 
     const ragConfig = {
         db: {
-            type: 'json',
+            type: process.env.RAG_DATASTORE || '',
             hostUri: process.env.RAG_STORAGE_URI || ''
         },
         limitResults: parseInt(process.env.RAG_LIMIT_RESULTS || '10', 10),

@@ -1,5 +1,6 @@
 import { AetheriumConfig, RagSearchResult } from "../../types.js";
 import { JsonRagStore } from "./json.datastore.js";
+import { OpensearchRagDatastore } from "./opensearch.js";
 
 export type TempDbEntryMetadata = {
     uri: string,
@@ -40,7 +41,10 @@ export async function getRagDatastore(config: AetheriumConfig): Promise<RagDataS
     if (!datastore && config.rag.db.type === 'json') {
         const dbFileLocation = config.rag.db.hostUri.replace('file://', '')
         datastore = new JsonRagStore(dbFileLocation);
-        await datastore.connect();
+    }
+
+    else if (!datastore && config.rag.db.type === 'opensearch') {
+        datastore = new OpensearchRagDatastore(config.rag.db.hostUri)
     }
 
     if (!datastore) {
@@ -49,5 +53,6 @@ export async function getRagDatastore(config: AetheriumConfig): Promise<RagDataS
         throw new Error(`No RagDataStore available for configuration: ${JSON.stringify(config.rag.db)}`)
     }
 
+    await datastore.connect();
     return datastore
 }
