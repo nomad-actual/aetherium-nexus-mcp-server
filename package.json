@@ -10,6 +10,7 @@
     "start:dev": "npm run build && node --env-file=.env dist/app.js",
     "start": "node dist/app.js",
     "rag:ingest": "npm run build && node --env-file=.env dist/rag/indexer.js",
+    "rag:reset": "npm run build && node --env-file=.env dist/rag/reset.js",
     "rag:search": "npm run build && node --env-file=.env dist/rag/search.js",
     "rag:temp": "npm run build && node --env-file=.env dist/rag/temp.js"
   },
@@ -18,19 +19,17 @@
   "license": "ISC",
   "dependencies": {
     "@langchain/community": "^0.3.50",
-    "@langchain/core": "^0.3.68",
+    "@langchain/core": "^0.3.70",
     "@langchain/textsplitters": "^0.1.0",
-    "@mastra/rag": "^1.0.7",
-    "@modelcontextprotocol/sdk": "^1.17.2",
+    "@modelcontextprotocol/sdk": "^1.17.3",
     "@mozilla/readability": "^0.6.0",
     "@opensearch-project/opensearch": "^3.5.1",
     "axios": "^1.11.0",
-    "clientside-search": "^1.8.1",
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "fast-cosine-similarity": "^1.2.2",
     "geo-tz": "^8.1.4",
-    "js-tiktoken": "^1.0.20",
+    "js-tiktoken": "^1.0.21",
     "jsdom": "^26.1.0",
     "ntp-time": "^2.0.8",
     "ollama": "^0.5.17",
@@ -46,7 +45,7 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/jsdom": "^21.1.7",
-    "@types/node": "^24.2.0",
+    "@types/node": "^24.2.1",
     "typescript": "^5.9.2"
   }
 }

@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { Ollama } from 'ollama'
-import { ingest } from './ingestor/text.ingestor.js';
+import { ingest } from './ingestor/ingestor.js';
 import { getConfig } from '../utils/config.js';
 import { AetheriumConfig } from '../types.js';
 import { getRagDatastore } from './database/datastore.js';

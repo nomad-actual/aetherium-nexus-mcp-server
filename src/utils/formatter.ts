@@ -30,8 +30,7 @@ export function formatDateTime(date: Date, localeOpts: AetheriumLocaleOptions, t
 }
 
 export function formatDuration(startTimestamp: number) {
-    const duration = (Date.now() - startTimestamp) / 1000
-    return `${duration}s`
+    return `${(Date.now() - startTimestamp) / 1000}s`
 }
 
 export function formatTime(date: Date, localeOpts: AetheriumLocaleOptions) {

@@ -7,8 +7,12 @@ import { getRagDatastore } from './database/datastore.js';
 const ollamaClient = new Ollama({ host: getConfig().llmClient.host  })
 
 
-async function makeRerankCall(userQuery: string, chunk: string, config: AetheriumConfig) {
-    const rerankQuery =
+async function makeSemanticRankingCall(userQuery: string, chunk: string, config: AetheriumConfig) {
+    if (!config.llmClient.semanticSearchModelContext) {
+        throw new Error('No Semantic Model Set - update config with a model')
+    }
+
+    const semanticQuery =
 `You are an expert relevance grader. Your task is to evaluate if the 
 following document is relevant to the user's query. 
 Answer a with a "yes" or "no" based on how similar the document is to the query.
@@ -17,12 +21,10 @@ Query: ${userQuery}
 Document: ${chunk}
 `
 
-// Uses the Qwen3 Reranker to score the relevance of a document to a query.
-// Returns a score of 1.0 for 'Yes' and 0.0 for 'No'.
-
+    // Returns a score of 1.0 for 'Yes' and 0.0 for 'No'.
     const response = await ollamaClient.chat({
         model: config.llmClient.semanticSearchModel,
-        messages: [{ role: 'user', content: rerankQuery }],
+        messages: [{ role: 'user', content: semanticQuery }],
         stream: false,
         format: {
             "type": "object",
@@ -71,10 +73,12 @@ async function makeEmbedding(userQuery: string, config: AetheriumConfig): Promis
 
 async function doSemanticSearch(query: string, config: AetheriumConfig, ragResults: RagSearchResult[]): Promise<RagSearchResult[]> {
     for (const temp of ragResults) {
-        const semanticScore = await makeRerankCall(query, temp.content, config)
+        const semanticScore = await makeSemanticRankingCall(query, temp.content, config)
         temp.metadata.semanticScore = semanticScore
     }
 
+    // todo: figure out a better result object. it's not obvious to have 
+    // requires us to return the various scores which might not be available
     const finalResults = ragResults.sort((a, b) => {
         if (a.metadata.semanticScore !== b.metadata.semanticScore) {
             return b.metadata.semanticScore - a.metadata.semanticScore
@@ -116,6 +120,7 @@ export async function search(query: string, config: AetheriumConfig) {
     let finalResults = basicSearchResults
     const semanticStart = Date.now()
 
+    // todo: check if model is set
     if (config.rag.semanticSearchEnabled) {
         finalResults = await doSemanticSearch(query, config, basicSearchResults)
     }
@@ -134,10 +139,3 @@ export async function search(query: string, config: AetheriumConfig) {
 
     return finalResults
 }
-
-// const config = getConfig()
-// const query = 'homelab Hestia'
-
-// search(query, config)
-//     .then(() => console.log('done'))
-//     .catch((err) => console.error(err))

@@ -2,21 +2,26 @@ import { RagSearchResult } from "../../types.js";
 import { RagDataStore, TempDataStoreLookupEmbeddingOptions } from "./datastore.js";
 import { Client } from '@opensearch-project/opensearch'
 
-export class OpensearchRagDatastore implements RagDataStore {
+export class OpenSearchRagDatastore implements RagDataStore {
     private readonly client: Client;
     private readonly indexName = 'aetherium-nexus-rag';
     // private readonly vectorIndexName = 'aetherium-nexus-rag-vector';
 
     // todo: need to add the vector store configs
+    // this also means storing settings per model next to the model supported with some default
     // index type knn_vector, index dimensionality (maps to embedding model)
+    // on change, the embedding needs to reingest everything since the dimensions are
+    // not the same
 
     constructor(host: string) {
         this.client = new Client({
             node: host,
-            
         })
     }
 
+    async reset() {
+        return this.client.indices.delete({ index: this.indexName })
+    }
 
 
     async connect(): Promise<void> {
@@ -33,28 +38,14 @@ export class OpensearchRagDatastore implements RagDataStore {
                         properties: {
                             ragVector: {
                                 type: "knn_vector",
+                                // this cannot stay this way - must be tied to model somehow
                                 dimension: 2560,
+                                space_type: 'cosinesimil'
                             },
                         },
                     }
                 }
             });
-            // await this.client.indices.create({
-            //     index: this.vectorIndexName,
-            //     body: {
-            //         settings: {
-            //             "index.knn": true,
-            //         },
-            //         mappings: {
-            //             properties: {
-            //                 vector: {
-            //                     type: "knn_vector",
-            //                     dimension: 2560,
-            //                 },
-            //             },
-            //         }
-            //     }
-            // });
         }
     }
 

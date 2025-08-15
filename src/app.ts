@@ -6,16 +6,8 @@ import { getConfig } from './utils/config.js'
 import type { AetheriumConfig } from './types.js'
 import logger from './utils/logger.js'
 
-import { buildEmbeddings } from './rag/indexer.js'
-
 const config: AetheriumConfig = getConfig()
-
-const corsAllowed = [
-    '127.0.0.1',
-    'localhost',
-    'https://homelab.ist',
-    'https://ai.homelab.ist',
-]
+const corsAllowed = config.mcpServer.corsAllowedHosts
 
 const app = express()
 app.use(express.json())
@@ -49,8 +41,8 @@ app.post('/mcp', async (req: Request, res: Response) => {
         const transport = new StreamableHTTPServerTransport({
             sessionIdGenerator: undefined,
             enableDnsRebindingProtection: true,
-            allowedHosts: ['127.0.0.1', 'localhost:3000', 'http://localhost', 'https://ai.homelab.ist'],
-            allowedOrigins: ['https://ai.homelab.ist', 'http://localhost', 'http://localhost:5173']
+            allowedHosts: config.mcpServer.corsAllowedHosts,
+            allowedOrigins: config.mcpServer.corsAllowedOrigins,
         })
 
         res.on('close', () => {

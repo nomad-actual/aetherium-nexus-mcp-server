@@ -91,7 +91,7 @@ export type RagIndexingOpts = {
 }
 
 export type LlmClientOptions = {
-    type: string | 'ollama'
+    type: string
     host: string
     embeddingModel: string
     embeddingModelContext: number
@@ -105,7 +105,8 @@ export type AetheriumConfig = {
     mcpServer: {
         port: number
         host: string
-        cors: string[]
+        corsAllowedHosts: string[],
+        corsAllowedOrigins: string[],
         title: string
     },
     defaultLocation: {

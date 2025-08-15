@@ -6,6 +6,7 @@ const tokenEncoder = new Tiktoken(o200k_base);
 
 import { MarkdownTextSplitter } from "@langchain/textsplitters"
 import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
+// this is really just native chunking
 import { chunkText } from "../../utils/text.chunker.js";
 
 // todo config
@@ -35,16 +36,17 @@ export async function ingest(filePath: string): Promise<string[]> {
         return ingestPdf(filePath);
     }
 
-    // todo: 
+    // todo:
     // .txt
-    // .doc, .docx, (open office), .pptx, .epub, etc
+    // .doc, .docx, (open office), .pptx, .epub, html, etc
 
     return []
 }
 
-
+// todo: break out to separate modules
 async function ingestMarkdown(filePath: string): Promise<string[]> {
-    // notes for future improvements (from https://www.reddit.com/r/Rag/comments/1lcqw1x/embeddingschunking_for_markdown_content/)
+    // notes for future improvements 
+    // (from https://www.reddit.com/r/Rag/comments/1lcqw1x/embeddingschunking_for_markdown_content/)
 
     // Don't split tables at all - treat each table as a single chunk (by way of using html)
     // You can detect markdown tables by looking for the pipe characters and header separators.

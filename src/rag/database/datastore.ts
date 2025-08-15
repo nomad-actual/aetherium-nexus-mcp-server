@@ -1,6 +1,6 @@
 import { AetheriumConfig, RagSearchResult } from "../../types.js";
 import { JsonRagStore } from "./json.datastore.js";
-import { OpensearchRagDatastore } from "./opensearch.js";
+import { OpenSearchRagDatastore } from "./opensearch.js";
 
 export type TempDbEntryMetadata = {
     uri: string,
@@ -44,7 +44,7 @@ export async function getRagDatastore(config: AetheriumConfig): Promise<RagDataS
     }
 
     else if (!datastore && config.rag.db.type === 'opensearch') {
-        datastore = new OpensearchRagDatastore(config.rag.db.hostUri)
+        datastore = new OpenSearchRagDatastore(config.rag.db.hostUri)
     }
 
     if (!datastore) {
