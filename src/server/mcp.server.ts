@@ -14,8 +14,8 @@ const toolsDef: ToolsDef[] = [
     buildCurrentWeatherTool(),
     buildForecastTool(),
     buildTimeTool(),
-    buildSearchTool(),
-    // buildWebSearchTool(),
+    // buildSearchTool(),
+    buildWebSearchTool(),
     buildPackageTrackingTool(),
     buildWebScraperTool(),
 ]
