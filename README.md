@@ -24,26 +24,26 @@ My collection of MCP tools
 - [x] Web scraping building results returns the normal results without wrapping in ToolCallResult
 - [x] basic opensearch integration
 - [x] really basic RAG indexing and searching on some basic files
+- [x] deploy more permanent opensearch db to use instead of json
 
 ### In Progress
 
-- [ ] add RAG + web tool
+- [ ] finish up early RAG + web tooling
+- [ ] Fix ghetto weather location lookups (no default)
 
-### Todo
+### todo
 
-- [ ] create more permanent opensearch db to use
-- [ ] firm up the autoindexer "cron?"
 - [ ] openai compat instead of ollama to prep from move off to (vllm, llama.cpp, or aphrodite engine)
 - [ ] reddit comment parsing (configurable levels deep and limit the total of 10 comments per thread)...though semantic parsing would be cool...as would using cheap vector searches and bm25 to quickly determine a potential relevance
 - [ ] fix prod package tracker not taking screenshots because browser process won't start
-- [ ] opensearch for rag instead of silly jsonfile-backed storage
-- [ ] long scraping times should be aborted or some other/better UI/UX feedback should be employed
-- [ ] Fix ghetto weather location lookups (no default)
-- [ ] Notes archive first embeddings
-- [ ] youtube summarizer (yt-dlp-> ffmpeg>8.0?)
+- [ ] long scraping times should be aborted (via signals/timeouts) or some other/better UI/UX feedback should be employed
+- [ ] youtube downloader (yt-dlp)
+- [ ] youtube transcription (yt-dlp-> ffmpeg 8.0+)
+- [ ] firm up the autoindexer "cron?"
 
-### Extra
+### Upcoming
 
+- [ ] phone number lookup (first OSINT stuff)
 - [ ] home automation commands and queries
 - [ ] Deeper Researcher
 - [ ] move the ui over or merge projects?

@@ -27,11 +27,21 @@ async function findFiles(fp: string, config: AetheriumConfig) {
     })
 }
 
+async function crawlAllDirs(config: AetheriumConfig) {
+    const allFiles = []
+
+    for (const dir of config.rag.directoriesToIngest) {
+        const files = await findFiles(dir, config)
+        allFiles.push(...files)
+    }
+
+    return allFiles
+}
+
 export async function buildEmbeddings(config: AetheriumConfig) {
     console.log(config.rag)
-    const dir = config.rag.directoriesToIngest[0]
-    const files = await findFiles(dir, config)
 
+    const files = await crawlAllDirs(config)
     const ragDataStore = await getRagDatastore(config)
 
     let fileCounter = 0

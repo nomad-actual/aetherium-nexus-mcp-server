@@ -11,6 +11,7 @@ const corsAllowed = config.mcpServer.corsAllowedHosts
 
 const app = express()
 app.use(express.json())
+// todo: do this better
 // app.use(
 //     cors({
 //         origin: function (origin: string | undefined, callback) {
@@ -103,9 +104,9 @@ const { port, host } = config.mcpServer
 
 app.listen({ port, host }, (error: Error | undefined) => {
     if (error) {
-        logger.error('Error starting MCP server:', error)
+        logger.error(error, 'Error starting MCP server')
         process.exit(1)
     }
 
-    logger.info(`MCP Server listening on http://${host}:${port}`, error || '')
+    logger.info(`MCP Server listening on http://${host}:${port}`)
 })

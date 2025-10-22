@@ -67,19 +67,21 @@ export class JsonRagStore implements RagDataStore {
     // really just emulating what something like opensearch would do
     // it's just convenient to put it here
     async basicSearch(userQuery: string, userSearchEmbedding: number[], options?: TempDataStoreLookupEmbeddingOptions): Promise<RagSearchResult[]> {
-        const bm25Docs = JsonRagStore.fakeDb.map(entry => {
-            const vectorScore = cosineSimilarity(userSearchEmbedding, entry.vector)
+        const bm25Docs = JsonRagStore.fakeDb
+            .filter(entry => !!entry.vector)
+            .map(entry => {
+                const vectorScore = cosineSimilarity(userSearchEmbedding, entry.vector)
 
-            return {
-                pageContent: entry.content,
-                metadata: {
-                    uri: entry.metadata.uri,
-                    cosineSimilarityScore: vectorScore,
-                    semanticScore: 0,
-                    embeddingId: entry.metadata.embeddingId,
+                return {
+                    pageContent: entry.content,
+                    metadata: {
+                        uri: entry.metadata.uri,
+                        cosineSimilarityScore: vectorScore,
+                        semanticScore: 0,
+                        embeddingId: entry.metadata.embeddingId,
+                    }
                 }
-            }
-        })
+            })
 
         const engineOpts = {
             k: JsonRagStore.fakeDb.length,
@@ -121,7 +123,12 @@ export class JsonRagStore implements RagDataStore {
                 }
             }
         })
-        
+
+        // note: this might be adjustable anywhere
+        if (options.minEmbeddingScore) {
+            vectorResults = vectorResults.filter(r => r.metadata.cosineSimilarityScore >= (options.minEmbeddingScore || 0))
+        }
+
         if (options.sortByClosestMatch) {
             vectorResults = vectorResults.sort((a, b) => {
                 return b.metadata.cosineSimilarityScore - a.metadata.cosineSimilarityScore

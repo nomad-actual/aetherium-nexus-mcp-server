@@ -39,7 +39,7 @@ export class OpenSearchRagDatastore implements RagDataStore {
                             ragVector: {
                                 type: "knn_vector",
                                 // this cannot stay this way - must be tied to model somehow
-                                dimension: 2560,
+                                dimension: 1024,
                                 space_type: 'cosinesimil'
                             },
                         },

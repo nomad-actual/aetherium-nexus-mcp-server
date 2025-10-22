@@ -2,12 +2,16 @@ import fs from 'fs/promises';
 import path from "node:path";
 import { Tiktoken } from "js-tiktoken/lite";
 import o200k_base from "js-tiktoken/ranks/o200k_base";
-const tokenEncoder = new Tiktoken(o200k_base);
 
 import { MarkdownTextSplitter } from "@langchain/textsplitters"
 import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
-// this is really just native chunking
+import { OfficeParserConfig, parseOfficeAsync } from 'officeparser'
+
+// this is really just naive chunking
 import { chunkText } from "../../utils/text.chunker.js";
+
+
+const tokenEncoder = new Tiktoken(o200k_base);
 
 // todo config
 const chunkOverlapPercent = 0.10
@@ -15,32 +19,61 @@ const chunkSize = 500
 const chunkOverlap = Math.floor(chunkSize * chunkOverlapPercent);
 
 
+function isSupportedOfficeDoc(fileExt: string): boolean {
+    return [
+        '.docx', '.pptx', '.xlsx',
+        '.odt', '.odp', '.ods',
+        '.pdf',
+    ].some((officeExt) => fileExt.endsWith(officeExt))
+}
+
 // future improvements:
 // - convert to html and use the structure to more easily parse
 //
 // - semantic chunking is expensive but perhaps useful if it eliminates the 
 //   need for semantic searching at the end
 
-
 export async function ingest(filePath: string): Promise<string[]> {
     const fileExt = path.extname(filePath).toLowerCase();
 
     console.log('Ingesting file:', filePath)
 
-    // todo: just object with file ext -> function
-    if (fileExt.toLowerCase() === '.md') {
+    if (fileExt === '.md') {
         return ingestMarkdown(filePath);
     }
 
-    if (fileExt.toLowerCase() === '.pdf') {    
-        return ingestPdf(filePath);
+    if (isSupportedOfficeDoc(fileExt)) {
+        return ingestOfficeDoc(filePath)
     }
 
+    // handled in office docs but here in case we need it
+    // if (fileExt === '.pdf') {    
+    //     return ingestPdf(filePath);
+    // }
+
     // todo:
-    // .txt
-    // .doc, .docx, (open office), .pptx, .epub, html, etc
+    // .txt, .rtf, .doc, .epub, .html, etc
 
     return []
+}
+
+async function ingestOfficeDoc(filePath:string): Promise<string[]> {
+
+    const options: OfficeParserConfig = {
+        ignoreNotes: false,
+        outputErrorToConsole: false, // I guess
+        preserveTempFiles: false,
+        putNotesAtLast: false, // maybe?
+    }
+
+    const parsedOfficeDoc = await parseOfficeAsync(filePath, options)
+    const chunks = chunkText(parsedOfficeDoc, {
+        chunkOverlap: chunkOverlap,
+        chunkSize: chunkSize,
+        method: 'paragraph'
+    })
+
+    return chunks
 }
 
 // todo: break out to separate modules

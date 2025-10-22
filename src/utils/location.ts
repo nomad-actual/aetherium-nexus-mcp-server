@@ -118,7 +118,7 @@ export function closestMatch(locations: LocationResult[], city: string, stateOrP
 
     logger.info('no exact match, finding closest by population')
     likely.sort((a, b) => b.population - a.population);
-    logger.info('chosen', likely[0])
+    logger.info(`chosen: ${likely[0]}`)
 
     const [hopefully] = likely
 

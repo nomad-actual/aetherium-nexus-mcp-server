@@ -28,7 +28,7 @@ async function timeHandler(config: AetheriumConfig): Promise<CallToolResult> {
     const formattedTime = formatDateTime(time, config.locale, config.defaultLocation.timezone)
     const oldStyle = formatDate(time, config.locale)
 
-    logger.info(`NTP time - ${oldStyle}`, formattedTime)
+    logger.info(`NTP time - ${oldStyle} - ${formattedTime}`)
 
     return {
         content: [{ type: 'text', text: formattedTime }]

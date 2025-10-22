@@ -17,6 +17,7 @@ export type DbEntry = {
 export type TempDataStoreLookupEmbeddingOptions = {
     limit?: number,
     sortByClosestMatch?: boolean,
+    minEmbeddingScore?: number,
 }
 
 // temp until we do opensearch and maybe others

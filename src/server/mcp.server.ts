@@ -8,12 +8,14 @@ import { buildTimeTool } from '../mcp/time.js'
 import { buildWebSearchTool } from '../mcp/websearch.js'
 import { buildPackageTrackingTool } from '../mcp/trackpackage.js'
 import { buildWebScraperTool } from '../mcp/website-scraper.js'
+import { buildSearchTool } from '../mcp/search.js'
 
 const toolsDef: ToolsDef[] = [
     buildCurrentWeatherTool(),
     buildForecastTool(),
     buildTimeTool(),
-    buildWebSearchTool(),
+    buildSearchTool(),
+    // buildWebSearchTool(),
     buildPackageTrackingTool(),
     buildWebScraperTool(),
 ]

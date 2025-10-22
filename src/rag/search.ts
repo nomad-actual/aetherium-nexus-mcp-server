@@ -108,7 +108,12 @@ export async function search(query: string, config: AetheriumConfig) {
     const baseSearchStart = Date.now()
     const [userQueryVector] = await makeEmbedding(query, config);
 
-    const searchConf = { limit: config.rag.limitResults, sortByClosestMatch: true }
+    const searchConf = { 
+        limit: config.rag.limitResults,
+        sortByClosestMatch: true,
+        minEmbeddingScore: 0.2
+    }
+
     let basicSearchResults = await ragDataStore.basicSearch(
         query,
         userQueryVector,
@@ -139,3 +144,8 @@ export async function search(query: string, config: AetheriumConfig) {
 
     return finalResults
 }
+
+// just for testing
+search('algorithms', getConfig())
+    .then(r => console.log('done'))
+    .catch(e => console.log(e))
