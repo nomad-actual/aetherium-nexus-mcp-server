@@ -28,24 +28,25 @@ My collection of MCP tools
 
 ### In Progress
 
-- [ ] finish up early RAG + web tooling
+- [ ] finish up early RAG + web search (need usability tests to determine usefulness)
 - [ ] Fix ghetto weather location lookups (no default)
+- [ ] indexer "cron?"
 
 ### todo
 
-- [ ] openai compat instead of ollama to prep from move off to (vllm, llama.cpp, or aphrodite engine)
-- [ ] reddit comment parsing (configurable levels deep and limit the total of 10 comments per thread)...though semantic parsing would be cool...as would using cheap vector searches and bm25 to quickly determine a potential relevance
+- [ ] reddit comment parsing (configurable levels deep and limit the total of 10 comments per thread)
+  - semantic parsing would be cool
 - [ ] fix prod package tracker not taking screenshots because browser process won't start
 - [ ] long scraping times should be aborted (via signals/timeouts) or some other/better UI/UX feedback should be employed
 - [ ] youtube downloader (yt-dlp)
-- [ ] youtube transcription (yt-dlp-> ffmpeg 8.0+)
-- [ ] firm up the autoindexer "cron?"
+- [ ] youtube transcription (yt-dlp -> ffmpeg 8.0+ or whisper)
 
 ### Upcoming
 
-- [ ] phone number lookup (first OSINT stuff)
-- [ ] home automation commands and queries
+- [ ] openai compat instead of ollama to prep from move off to (vllm, llama.cpp, or aphrodite)
+- [ ] phone number lookup (first OSINT tooling)
 - [ ] Deeper Researcher
+  - understanding when to look deeper or updating query during a higher confidence level
 - [ ] move the ui over or merge projects?
 - [ ] for advanced scraping, consider using python libraries or porting it over to node.jss
 - [ ] Control Navidrome via Subsonic to play certain music based on moods and time of day

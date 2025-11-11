@@ -42,8 +42,8 @@ app.post('/mcp', async (req: Request, res: Response) => {
         const transport = new StreamableHTTPServerTransport({
             sessionIdGenerator: undefined,
             enableDnsRebindingProtection: true,
-            allowedHosts: config.mcpServer.corsAllowedHosts,
-            allowedOrigins: config.mcpServer.corsAllowedOrigins,
+            // allowedHosts: config.mcpServer.corsAllowedHosts,
+            // allowedOrigins: config.mcpServer.corsAllowedOrigins,
         })
 
         res.on('close', () => {
@@ -84,6 +84,8 @@ app.get('/mcp', async (req: Request, res: Response) => {
         })
     )
 })
+
+
 
 // Session termination not needed in stateless mode
 app.delete('/mcp', async (req: Request, res: Response) => {
