@@ -297,7 +297,7 @@ async function weatherForecastToolHandler({ location }: any, config: AetheriumCo
     const time = await getTime(config.timeserver)
     const day = formatDate(time, config.locale)
 
-    const forecastDays = 3
+    const forecastDays = 7
 
     const weatherQuery: WeatherQuery = {
         lat: locationObj?.latitude || config.defaultLocation.lat,
