@@ -178,7 +178,7 @@ async function fetchWeather(weatherQuery: WeatherQuery): Promise<WeatherApiRespo
         temperature_unit: temperatureUnit,
         wind_speed_unit: speedUnit,
         precipitation_unit: precipitationUnit,
-        forecast_days: 3,
+        forecast_days: weatherQuery.forecastDays || 3,
         timezone: weatherQuery.timezone,
     }
 
