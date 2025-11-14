@@ -258,7 +258,10 @@ async function currentWeatherToolHandler({ location }: any, config: AetheriumCon
         forecastDays: 3 // todo: config
     }
 
-    logger.info(`Weather Query ${weatherQuery} default location: ${config.defaultLocation }`)
+    logger.info({
+        weatherQuery,
+        defaultLocation: config.defaultLocation
+    })
 
     const response = await fetchWeather(weatherQuery)
     const weather = buildWeatherData(response)
@@ -313,7 +316,10 @@ async function weatherForecastToolHandler({ location }: any, config: AetheriumCo
         forecastDays // todo: config
     }
 
-    logger.info(`Weather Query ${weatherQuery} default location: ${config.defaultLocation }`)
+    logger.info({
+        weatherQuery,
+        defaultLocation: config.defaultLocation
+    })
 
     const response = await fetchWeather(weatherQuery)
     const weather = buildWeatherData(response)
