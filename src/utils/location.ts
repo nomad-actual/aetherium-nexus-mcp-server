@@ -76,7 +76,7 @@ export async function search(query: string, { limit = 10, language = 'en' }): Pr
 
     const { results } = locationResp.data
     
-    const locations: LocationResult[] = results.map((r: any) => {
+    const locations: LocationResult[] = (results || []).map((r: any) => {
         return {
             latitude: r.latitude,
             longitude: r.longitude,
