@@ -47,7 +47,7 @@ async function searchEverything(args: any, config: AetheriumConfig): Promise<Cal
 
     // for time-related searches like 'most recent', it's helpful to have this context
     const time = await getTime(config.timeserver)
-    const day = formatDate(time, config.locale)
+    const day = formatDate(time, config.locale, config.defaultLocation.timezone)
 
     const results = (await Promise.all(promises)).flat()
 

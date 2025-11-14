@@ -37,7 +37,7 @@ export function formatTime(date: Date, localeOpts: AetheriumLocaleOptions) {
     return date.toLocaleString(localeOpts.region, { hour: 'numeric', minute: 'numeric' })
 }
 
-export function formatDate(date: Date, localeOpts: AetheriumLocaleOptions, timezone: string) {
+export function formatDate(date: Date, localeOpts: AetheriumLocaleOptions, timezone?: string) {
     const weekday = localeOpts.showWeekday ? 'short' : undefined
     
     return date.toLocaleDateString(localeOpts.region, { 
