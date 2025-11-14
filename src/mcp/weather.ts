@@ -1,7 +1,7 @@
 import { fetchWeatherApi } from 'openmeteo'
 import { closestMatch, makeLocationString, search } from '../utils/location.js'
 import z from 'zod'
-import { formatDate, formatTemperature } from '../utils/formatter.js'
+import { formatDate, formatDateTime, formatTemperature } from '../utils/formatter.js'
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import { WeatherApiResponse } from '@openmeteo/sdk/weather-api-response.js'
 import { getConfig } from '../utils/config.js'
@@ -295,7 +295,10 @@ async function currentWeatherToolHandler({ location }: any, config: AetheriumCon
 async function weatherForecastToolHandler({ location }: any, config: AetheriumConfig): Promise<CallToolResult> {
     const locationObj = await fetchLocation(location)
     const time = await getTime(config.timeserver)
-    const day = formatDate(time, config.locale)
+
+    // note this does not track the user's timezone, just the location's requested
+    const timezone = locationObj?.timezone || config.defaultLocation.timezone
+    const day = formatDate(time, config.locale, timezone)
 
     const forecastDays = 7
 
