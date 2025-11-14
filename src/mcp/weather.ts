@@ -1,5 +1,5 @@
 import { fetchWeatherApi } from 'openmeteo'
-import { closestMatch, makeLocationString, search } from '../utils/location.js'
+import { closestMatch, findNearestCity, makeLocationString, search } from '../utils/location.js'
 import z from 'zod'
 import { formatDate, formatDateTime, formatTemperature } from '../utils/formatter.js'
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
@@ -244,8 +244,25 @@ async function fetchLocation(locationArg: string): Promise<LocationResult | null
     return closestMatch(locations, city, state)
 }
 
-async function currentWeatherToolHandler({ location }: any, config: AetheriumConfig): Promise<CallToolResult> {
-    const locationObj = await fetchLocation(location)
+async function currentWeatherToolHandler({ location }: { location: string | undefined }, config: AetheriumConfig): Promise<CallToolResult> {
+    let lookup = location
+
+    if (!location) {
+        const city = findNearestCity(config.defaultLocation.lat, config.defaultLocation.lon)
+        
+        if (!city) {
+            throw new Error('No location could be determined')
+        }
+
+        lookup = `${city.name}, ${city.state || city.country}`
+    }
+
+    if (!lookup) {
+        throw new Error('No location could be determined')
+    }
+
+    const locationObj = await fetchLocation(lookup)
+
 
     const weatherQuery: WeatherQuery = {
         lat: locationObj?.latitude || config.defaultLocation.lat,

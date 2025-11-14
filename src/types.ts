@@ -68,6 +68,14 @@ export type ForecastDay = {
     county: string, // example: Los Angeles County, Brooklyn, etc
 }
 
+export interface City {
+    name: string;
+    country: string;
+    state: string;
+    county: string;
+    lat: string
+    lng: string
+}
 
 export type AetheriumLocaleOptions = {
         region: string,

@@ -1,7 +1,65 @@
 
 import axios from 'axios';
-import type { LocationResult } from '../types.js';
+import type { City, LocationResult } from '../types.js';
 import logger from './logger.js';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+
+// sorted by lat, lon
+let citiesDb = [] as City[]
+
+function loadDb() {
+    const fp = path.join(import.meta.dirname, 'location-db','world_cities_15000_(including_all_states_and_counties).json')
+    const raw = readFileSync(fp, { encoding: 'utf8' });
+    citiesDb = JSON.parse(raw)
+}
+
+loadDb()
+
+function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // Earth radius in kilometers
+  const dLat = toRadians(lat2 - lat1);
+  const dLon = toRadians(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(dLon / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c; // Distance in kilometers
+}
+
+function toRadians(degrees: number): number {
+  return degrees * (Math.PI / 180);
+}
+
+export function findNearestCity(lat: number, lon: number): City | null {
+    if (!citiesDb.length) return null;
+
+    let nearestCity: City | null = null;
+    let minDistance = Infinity;
+
+    for (const city of citiesDb) {
+      const cityLat = parseFloat(city.lat)
+      const cityLng = parseFloat(city.lng)
+      const distance = haversineDistance(lat, lon, cityLat, cityLng)
+
+      if (distance < minDistance) {
+        minDistance = distance
+        nearestCity = city
+      }
+    }
+
+    return nearestCity
+  }
+
+
+export function findCitiesWithinRadius(lat: number, lon: number, radiusKm: number): City[] {
+    return citiesDb.filter((city) => {
+        const cityLat = parseFloat(city.lat);
+        const cityLng = parseFloat(city.lng);
+        const distance = haversineDistance(lat, lon, cityLat, cityLng);
+        return distance <= radiusKm;
+    });
+}
 
 export async function search(query: string, { limit = 10, language = 'en' }): Promise<LocationResult[]> {
 
