@@ -115,7 +115,8 @@ export type AetheriumConfig = {
         host: string
         corsAllowedHosts: string[],
         corsAllowedOrigins: string[],
-        title: string
+        title: string,
+        toolCallRequestTimeout: number
     },
     defaultLocation: {
         lat: number
@@ -140,6 +141,8 @@ export type ScrapeOptions = {
     maxContentLength: number; // in characters to the closest sentence
     minReadableLength: number; // in characters,
     minScore: number,
+    timeout: number,
+    signal: AbortSignal
 }
 
 export type ReadableWebpageContent = {

@@ -23,39 +23,39 @@ My collection of MCP tools
 - [x] make scraper more modular with fallbacks
 - [x] Web scraping building results returns the normal results without wrapping in ToolCallResult
 - [x] basic opensearch integration
-- [x] really basic RAG indexing and searching on some basic files
-- [x] deploy more permanent opensearch db to use instead of json
+- [x] RAG - basic indexing and searching on some files
+- [x] RAG - basic opensearch support
+- [x] long scraping times should be aborted (via signals/timeouts) or some other/better UI/UX feedback should be employed
 
 ### In Progress
 
-- [ ] finish up early RAG + web search (need usability tests to determine usefulness)
 - [ ] Fix ghetto weather location lookups (no default)
-- [ ] indexer "cron?"
 
 ### todo
 
 - [ ] reddit comment parsing (configurable levels deep and limit the total of 10 comments per thread)
   - semantic parsing would be cool
 - [ ] fix prod package tracker not taking screenshots because browser process won't start
-- [ ] long scraping times should be aborted (via signals/timeouts) or some other/better UI/UX feedback should be employed
 - [ ] youtube downloader (yt-dlp)
 - [ ] youtube transcription (yt-dlp -> ffmpeg 8.0+ or whisper)
 
 ### Upcoming
 
+- [ ] RAG - finish up simple RAG + web search (need usability tests to determine usefulness)
+- [ ] RAG - indexer "cron?"
 - [ ] openai compat instead of ollama to prep from move off to (vllm, llama.cpp, or aphrodite)
+- [ ] OpenAPI for tools
 - [ ] phone number lookup (first OSINT tooling)
-- [ ] Deeper Researcher
-  - understanding when to look deeper or updating query during a higher confidence level
+- [ ] How might a Researcher work?
 - [ ] move the ui over or merge projects?
 - [ ] for advanced scraping, consider using python libraries or porting it over to node.jss
 - [ ] Control Navidrome via Subsonic to play certain music based on moods and time of day
   - part of that is the music genre analysis, tagging, and classification
 - [ ] Resume builder based on pasted job descriptions
-- [ ] Shodan search API for fun
-- [ ] translate subs from a file to another language
-- [ ] Music identification and sorting
-- [ ] General File organization proposals (non-destructive proposals)
-- [ ] Notification filtering:
+- [ ] OSINT - Shodan search API for fun
+- [ ] MEDIA - translate subs from a file to another language
+- [ ] MEDIA - Music identification and sorting
+- [ ] LIFE - General File organization proposals (non-destructive proposals)
+- [ ] LIFE - Notification filtering:
   - external systems like news or updates notifiying me of things I care about or not
   - could be rss or songs

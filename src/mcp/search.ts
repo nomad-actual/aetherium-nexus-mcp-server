@@ -37,8 +37,10 @@ async function searchEverything(args: any, config: AetheriumConfig): Promise<Cal
 
     const promises = []
 
+    const abort = AbortSignal.timeout(config.mcpServer.toolCallRequestTimeout)
+
     if (args.useWebSearch) {
-        promises.push(webSearch(args, config).then((results) => results.content))
+        promises.push(webSearch(args, config, abort).then((results) => results.content))
     }
     
     if (args.useRagSearch) {

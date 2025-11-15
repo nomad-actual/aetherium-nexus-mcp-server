@@ -1,9 +1,8 @@
 import puppeteer from 'puppeteer'
-import { McpToolContent, ReadableWebpageContent, ScrapeOptions } from '../../types.js';
+import { McpToolContent, ScrapeOptions } from '../../types.js';
 import logger from '../logger.js';
 import BasicHtmlScraper from './BasicHtmlScraper.js';
 import RedditScraper from './RedditScraper.js';
-import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 
 type ScreenShotOptions = {
     width: number;
@@ -53,8 +52,8 @@ export async function screenshotWebPage(url: string, screenshotOptions: ScreenSh
 
 function getScrapers(url: string) {
     return [
-            new RedditScraper(),
-            new BasicHtmlScraper()
+        new RedditScraper(),
+        new BasicHtmlScraper()
     ].filter((scraper) => scraper.shouldAttempt(url))
 }
 
@@ -63,6 +62,11 @@ export async function doWebScrape(url: string, scrapeOpts: ScrapeOptions): Promi
 
     // todo - failure handling - retry logic
     for (const scraper of scrapers) {
+        if (scrapeOpts.signal?.aborted) {
+            logger.warn('Aborted due to signal')
+            break
+        }
+
         const contents = await scraper.scrape(url, scrapeOpts)
 
         if (Array.isArray(contents)) {

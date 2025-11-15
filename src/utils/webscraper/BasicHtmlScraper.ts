@@ -4,16 +4,25 @@ import { Readability } from '@mozilla/readability'
 import { capitalizeFirstLetter } from '../formatter.js'
 import logger from '../logger.js'
 import { JSDOM, VirtualConsole } from 'jsdom'
+import { abort } from '../promises.js'
 
 
 export default class BasicHtmlScraper implements IScraper {
     async scrape(url: string, scrapeOpts: ScrapeOptions): Promise<any | null> {
         const startTime = Date.now()
-        const virtualConsole = new VirtualConsole()
-        // to ignore css parsing errors
-        virtualConsole.on('error', (err) => console.log('looool', err))
 
-        const dom = await JSDOM.fromURL(url, { virtualConsole })
+        const virtualConsole = new VirtualConsole({ captureRejections: true })
+
+        // to ignore css parsing errors
+        virtualConsole.on('error', (err) => logger.error({ mesaage: 'looool', err }))
+        // virtualConsole.on('jsdomError', (err) => logger.error({ message: 'sfsdf', err }))
+
+        const dom = await abort(
+            JSDOM.fromURL(url, { virtualConsole }),
+            scrapeOpts.signal,
+            'JSDOM aborted'
+        )
+
         logger.info({ message: `Scraping ${url}...`, dom })
 
         const reader = new Readability(dom.window.document)

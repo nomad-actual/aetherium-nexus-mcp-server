@@ -24,6 +24,7 @@ export function getConfig(): AetheriumConfig {
     const mcpServerCorsCorsAllowedOrigins = process.env.MCP_SERVER_CORS_ALLOWED_ORIGINS ? process.env.MCP_SERVER_CORS_ALLOWED_ORIGINS.split('|') : [];
     const mcpServerCorsCorsAllowedHosts = process.env.MCP_SERVER_CORS_ALLOWED_HOSTS ? process.env.MCP_SERVER_CORS_ALLOWED_HOSTS.split('|') : [];
     const mcpServerTitle = process.env.MCP_SERVER_TITLE || 'Default MCP server';
+    const toolCallTimeout = parseInt(process.env.TOOL_CALL_TIMEOUT || '', 10) || 10_000;
 
     const lat = parseFloat(process.env.DEFAULT_LOCATION_LAT || '') || 34.052235;
     const lon = parseFloat(process.env.DEFAULT_LOCATION_LON || '') || -118.243683;
@@ -40,7 +41,7 @@ export function getConfig(): AetheriumConfig {
     const is24HourTime = process.env.IS_24_HOUR_TIME === 'true';
 
     const searchHost = process.env.SEARCH_HOST || ''
-    const searchTimeout = parseInt(process.env.SEARCH_TIMEOUT || '', 10) || 10_000
+    const searchTimeout = parseInt(process.env.SEARCH_TIMEOUT || '', 10) || 5_000
     const searchContentLimit = parseInt(process.env.SEARCH_PAGE_CONTENT_LIMIT || '', 10) || 5_000
     const maxResults = parseInt(process.env.SEARCH_MAX_RESULTS || '', 10) || 5
 
@@ -75,6 +76,7 @@ export function getConfig(): AetheriumConfig {
             corsAllowedHosts: mcpServerCorsCorsAllowedHosts,
             corsAllowedOrigins: mcpServerCorsCorsAllowedOrigins,
             title: mcpServerTitle,
+            toolCallRequestTimeout: toolCallTimeout,
         },
         defaultLocation: {
             lat: lat,

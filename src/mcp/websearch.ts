@@ -2,9 +2,10 @@ import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import axios from 'axios';
 import z from 'zod';
 
-import { AetheriumConfig, ToolsDef } from '../types.js';
+import { AetheriumConfig, ScrapeOptions, ToolsDef } from '../types.js';
 import { getConfig } from '../utils/config.js';
 import { doWebScrape } from '../utils/webscraper/webscraper.js';
+import { abort } from '../utils/promises.js';
 
 type SearXNGResult = {
     url: string,
@@ -13,12 +14,13 @@ type SearXNGResult = {
 }
 
 // this is specifically for searxng
-async function searchForResults(queryArg: string, config: AetheriumConfig): Promise<SearXNGResult[]> {
+async function searchForResults(queryArg: string, config: AetheriumConfig, abortSignal: AbortSignal): Promise<SearXNGResult[]> {
     // http2?
     const results = await axios.request({
         method: 'get',
         baseURL: config.search.host,
         timeout: config.search.timeout,
+        signal: abortSignal,
         headers: {
             'Content-Type': 'application/json',
         },
@@ -52,18 +54,31 @@ function filterSites(searchResults: SearXNGResult[], config: AetheriumConfig) {
 }
 
 
-export async function search(args: any, config: AetheriumConfig): Promise<CallToolResult> {
+
+async function abortableSearch(args: any, config: AetheriumConfig): Promise<CallToolResult> {
+    const abortSignal = AbortSignal.timeout(config.mcpServer.toolCallRequestTimeout)
+    return await abort(
+        search(args, config, abortSignal),
+        abortSignal,
+        'Search aborted due to timeout.'
+    )
+}
+
+export async function search(args: any, config: AetheriumConfig, signal: AbortSignal): Promise<CallToolResult> {
     // crawl each site and retrieve html for summarization
     const start = Date.now()
-    const searchResults = await searchForResults(args.query, config)
+    const searchResults = await searchForResults(args.query, config, signal)
     const searchDuration = ((Date.now() - start) / 1000)
 
     const filteredResults = filterSites(searchResults, config)
 
-    const scrapeOpts = {
+
+    const scrapeOpts: ScrapeOptions = {
         maxContentLength: config.search.contentLimit,
         minScore: 20,
-        minReadableLength: 140
+        minReadableLength: 140,
+        timeout: config.search.timeout,
+        signal
     }
 
     const scrapePromises = filteredResults.map(result => doWebScrape(result.url, scrapeOpts))
@@ -76,6 +91,7 @@ export async function search(args: any, config: AetheriumConfig): Promise<CallTo
     promisesResults.forEach((result) => {
         if (result.status === 'fulfilled' && (result.value !== null || Array.isArray(result.value))) {
             contentArr.push(...result.value)
+            return
         }
     })
 
@@ -125,7 +141,7 @@ export function buildWebSearchTool(): ToolsDef {
         },
         handler: async(args: any) => {
             const config = getConfig()
-            return search(args, config)
+            return abortableSearch(args, config)
         }
     }
 }

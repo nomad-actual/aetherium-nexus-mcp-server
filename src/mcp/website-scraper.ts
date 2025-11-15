@@ -1,9 +1,10 @@
 import z from 'zod'
-import { AetheriumConfig, ToolsDef } from '../types.js'
+import { AetheriumConfig, ScrapeOptions, ToolsDef } from '../types.js'
 import { getConfig } from '../utils/config.js'
 import logger from '../utils/logger.js'
 import { doWebScrape } from '../utils/webscraper/webscraper.js'
 import { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
+import { abort } from '../utils/promises.js'
 
 async function scrape(args: { url: string }, config: AetheriumConfig): Promise<CallToolResult> {
     try {
@@ -11,20 +12,21 @@ async function scrape(args: { url: string }, config: AetheriumConfig): Promise<C
 
         // todo change this to one much larger since it's just a single page
         // adjust as needed but can't find hacker news?
-        const scrapeOpts = {
-            maxContentLength: config.search.contentLimit,
 
+        const abortSignal = AbortSignal.timeout(config.mcpServer.toolCallRequestTimeout)
+
+        const scrapeOpts: ScrapeOptions = {
+            maxContentLength: config.search.contentLimit,
             // not used
             minScore: 20,
             minReadableLength: 140,
+            timeout: config.search.timeout,
+            signal: abortSignal
         }
 
-        // hate the anys but the types in this are so bad
-        const contents = await doWebScrape(args.url, scrapeOpts) as any
+        const contents = await abort(doWebScrape(args.url, scrapeOpts), abortSignal, 'Web scraping aborted due to timeout') as any
 
-        return {
-            content: contents
-        }
+        return { content: contents }
     } catch (error) {
         // todo: handle errors better (aka the mcp way)
         logger.error({ message: 'Error scraping web page:', error })

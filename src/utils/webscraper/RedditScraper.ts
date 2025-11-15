@@ -16,7 +16,8 @@ export default class RedditScraper implements IScraper {
         const resp = await axios.request({
             method: 'GET',
             url: overrideUrl,
-            timeout: 5000, // todo: config
+            timeout: scrapeOpts.timeout,
+            signal: scrapeOpts.signal
         })
 
         if (resp.status !== 200) {
@@ -55,7 +56,7 @@ export default class RedditScraper implements IScraper {
             scrapeDuration: `${(Date.now() - startTime) / 1000} seconds`,
         }
 
-        // does not parse replies butmain post is more important for now
+        // does not parse replies but main post is more important for now
         // todo: parse replies
         const comments = data[1]?.data?.children.map((child: any) => {
             const comment = child.data;
