@@ -6,6 +6,7 @@ import { AetheriumConfig, ToolsDef } from '../types.js';
 import { getConfig } from '../utils/config.js';
 import logger from '../utils/logger.js';
 import { screenshotWebPage } from '../utils/webscraper/webscraper.js';
+import { abort } from "../utils/promises.js";
 
 
 function trackOnePackage(packageNumber: string, config: AetheriumConfig): TrackingNumber | null {
@@ -18,7 +19,7 @@ function trackOnePackage(packageNumber: string, config: AetheriumConfig): Tracki
 }
 
 
-async function trackPakages(args: { packages: string[] }, config: AetheriumConfig): Promise<CallToolResult> {
+async function trackPakages(args: { packages: string[] }, config: AetheriumConfig, abortSignal: AbortSignal): Promise<CallToolResult> {
     const packages = new Set(args.packages || [])
 
     if (packages.size === 0) {
@@ -26,7 +27,7 @@ async function trackPakages(args: { packages: string[] }, config: AetheriumConfi
     }
 
     // todo config max of a few (probably 5) packages to track
-    const maxPackages = 10
+    const maxPackages = 20
 
     if (packages.size > maxPackages) {
         return { content: [{ type: 'text', text: `Too many packages (${packages.size}) provided. Please provide up to ${maxPackages} packages.` }] }
@@ -44,10 +45,9 @@ async function trackPakages(args: { packages: string[] }, config: AetheriumConfi
         }
 
         const urlToScrape = trackingInfo.trackingUrl.replace('%s', trackingInfo.trackingNumber)
-        
 
         // some websites take a long time to render...
-        const options = { width: 1280, height: 1200, timeout: 30_000 }
+        const options = { width: 1280, height: 1200, timeout: 30_000, signal: abortSignal }
         const screenshot = await screenshotWebPage(urlToScrape, options)
 
         const trackingContent = {
@@ -98,10 +98,10 @@ export function buildPackageTrackingTool(): ToolsDef {
                 openWorldHint: true,
             }
         },
-        handler: async(args: any) => {
+        handler: async(args: any, abortSignal: AbortSignal) => {
             try {
                 const config = getConfig()
-                return trackPakages(args, config)
+                return trackPakages(args, config, abortSignal)
             } catch(err) {
                 logger.error(err)
                 throw err

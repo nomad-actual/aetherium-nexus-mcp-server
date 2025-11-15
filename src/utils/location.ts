@@ -61,7 +61,7 @@ export function findCitiesWithinRadius(lat: number, lon: number, radiusKm: numbe
     });
 }
 
-export async function search(query: string, { limit = 10, language = 'en' }): Promise<LocationResult[]> {
+export async function searchLocation(query: string, { limit = 10, language = 'en' }, timeout: number, signal: AbortSignal): Promise<LocationResult[]> {
 
     const url = 'https://geocoding-api.open-meteo.com/v1/search'
 
@@ -71,7 +71,9 @@ export async function search(query: string, { limit = 10, language = 'en' }): Pr
             count: limit,
             language: language,
             format: 'json',
-        }
+        },
+        timeout,
+        signal,
     })
 
     const { results } = locationResp.data

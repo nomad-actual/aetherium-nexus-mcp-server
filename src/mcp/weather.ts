@@ -1,5 +1,5 @@
 import { fetchWeatherApi } from 'openmeteo'
-import { closestMatch, findNearestCity, makeLocationString, search } from '../utils/location.js'
+import { closestMatch, findNearestCity, makeLocationString, searchLocation } from '../utils/location.js'
 import z from 'zod'
 import { formatDate, formatDateTime, formatTemperature } from '../utils/formatter.js'
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
@@ -165,7 +165,7 @@ function buildDaily(daily: any, utcOffsetSeconds: number): ForecastDay[] {
     return days
 }
 
-async function fetchWeather(weatherQuery: WeatherQuery): Promise<WeatherApiResponse>{
+async function fetchWeather(weatherQuery: WeatherQuery, signal: AbortSignal): Promise<WeatherApiResponse>{
     const url = 'https://api.open-meteo.com/v1/forecast'
 
     const speedUnit = weatherQuery.units === 'metric' ? 'kph' : 'mph'
@@ -192,7 +192,15 @@ async function fetchWeather(weatherQuery: WeatherQuery): Promise<WeatherApiRespo
         params.daily = weatherQuery.dailyWeatherVars.join(',')
     }
 
-    const responses: WeatherApiResponse[] = await fetchWeatherApi(url, params)
+    // undefined are defaulted
+    const responses: WeatherApiResponse[] = await fetchWeatherApi(
+        url,
+        params, 
+        undefined, // num retries
+        undefined, // backoff factor
+        undefined, // maximum backoff
+        { signal }
+    )
     const [response] = responses
 
     if (!response) {
@@ -225,7 +233,7 @@ function buildWeatherData(response: WeatherApiResponse): WeatherData {
     return weather
 }
 
-async function fetchLocation(locationArg: string): Promise<LocationResult | null> {
+async function fetchLocation(locationArg: string, config: AetheriumConfig, signal: AbortSignal): Promise<LocationResult | null> {
     if (!locationArg) {
         return null
     }
@@ -234,7 +242,7 @@ async function fetchLocation(locationArg: string): Promise<LocationResult | null
     const simpleQuery = locationArg.trim().split(',')
     const [city = '', state] = simpleQuery
 
-    const locations = await search(city, { limit: 5 })
+    const locations = await searchLocation(city, { limit: 5 }, config.search.timeout, signal)
 
     if (locations.length === 0) {
         // todo - return mcp error instead
@@ -244,7 +252,11 @@ async function fetchLocation(locationArg: string): Promise<LocationResult | null
     return closestMatch(locations, city, state)
 }
 
-async function currentWeatherToolHandler({ location }: { location: string | undefined }, config: AetheriumConfig): Promise<CallToolResult> {
+async function currentWeatherToolHandler(
+    { location }: { location: string | undefined },
+    config: AetheriumConfig,
+    signal: AbortSignal
+): Promise<CallToolResult> {
     let lookup = location
 
     if (!location) {
@@ -261,7 +273,7 @@ async function currentWeatherToolHandler({ location }: { location: string | unde
         throw new Error('No location could be determined')
     }
 
-    const locationObj = await fetchLocation(lookup)
+    const locationObj = await fetchLocation(lookup, config, signal)
 
 
     const weatherQuery: WeatherQuery = {
@@ -280,7 +292,7 @@ async function currentWeatherToolHandler({ location }: { location: string | unde
         defaultLocation: config.defaultLocation
     })
 
-    const response = await fetchWeather(weatherQuery)
+    const response = await fetchWeather(weatherQuery, signal)
     const weather = buildWeatherData(response)
 
     const { current } = weather
@@ -312,9 +324,9 @@ async function currentWeatherToolHandler({ location }: { location: string | unde
     }
 }
 
-async function weatherForecastToolHandler({ location }: any, config: AetheriumConfig): Promise<CallToolResult> {
-    const locationObj = await fetchLocation(location)
-    const time = await getTime(config.timeserver)
+async function weatherForecastToolHandler({ location }: any, config: AetheriumConfig, signal: AbortSignal): Promise<CallToolResult> {
+    const locationObj = await fetchLocation(location, config, signal)
+    const time = await getTime(config.timeserver, signal)
 
     // note this does not track the user's timezone, just the location's requested
     const timezone = locationObj?.timezone || config.defaultLocation.timezone
@@ -338,7 +350,7 @@ async function weatherForecastToolHandler({ location }: any, config: AetheriumCo
         defaultLocation: config.defaultLocation
     })
 
-    const response = await fetchWeather(weatherQuery)
+    const response = await fetchWeather(weatherQuery, signal)
     const weather = buildWeatherData(response)
 
     // todo: figure this part out XD
@@ -399,9 +411,9 @@ export function buildCurrentWeatherTool(): ToolsDef {
                 openWorldHint: true,
             },
         },
-        handler: async(args: any) => {
+        handler: async(args: any, signal: AbortSignal) => {
             const config = getConfig()
-            return currentWeatherToolHandler(args, config)
+            return currentWeatherToolHandler(args, config, signal)
         }
     }
 }
@@ -424,10 +436,10 @@ export function buildForecastTool(): ToolsDef {
                 openWorldHint: true,
             }
         },
-        handler: async(args: any) => {
+        handler: async(args: any, signal: AbortSignal) => {
             try {
                 const config = getConfig()
-                return weatherForecastToolHandler(args, config)
+                return weatherForecastToolHandler(args, config, signal)
             } catch (error) {
                 logger.error(error, 'Error fetching weather forecast',);
                 throw error

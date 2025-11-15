@@ -31,16 +31,14 @@ async function doRagSearch(query: string, config: AetheriumConfig) {
 
 
 
-async function searchEverything(args: any, config: AetheriumConfig): Promise<CallToolResult> {
+async function searchEverything(args: any, config: AetheriumConfig, abortSignal: AbortSignal): Promise<CallToolResult> {
     // ideally lookup web and rag simultaneously
     // if rag enabled
 
     const promises = []
 
-    const abort = AbortSignal.timeout(config.mcpServer.toolCallRequestTimeout)
-
     if (args.useWebSearch) {
-        promises.push(webSearch(args, config, abort).then((results) => results.content))
+        promises.push(webSearch(args, config, abortSignal).then((results) => results.content))
     }
     
     if (args.useRagSearch) {
@@ -48,7 +46,7 @@ async function searchEverything(args: any, config: AetheriumConfig): Promise<Cal
     }
 
     // for time-related searches like 'most recent', it's helpful to have this context
-    const time = await getTime(config.timeserver)
+    const time = await getTime(config.timeserver, abortSignal)
     const day = formatDate(time, config.locale, config.defaultLocation.timezone)
 
     const results = (await Promise.all(promises)).flat()
@@ -109,9 +107,9 @@ export function buildSearchTool(): ToolsDef {
                 openWorldHint: true,
             }
         },
-        handler: async(args: any) => {
+        handler: async(args: any, signal: AbortSignal) => {
             const config = getConfig()
-            return searchEverything(args, config)
+            return searchEverything(args, config, signal)
         }
     }
 }

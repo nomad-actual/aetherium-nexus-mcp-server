@@ -35,7 +35,13 @@ export function buildMCPServer(config: AetheriumConfig): McpServer {
 
     toolsDef.forEach((tool) => {
         // seems like can pass handler for progress updates as well
-        mcpServerInstance.registerTool(tool.name, tool.config, tool.handler)
+        mcpServerInstance.registerTool(
+            tool.name,
+            tool.config,
+            async (args: any) => {
+                const abortSignal = AbortSignal.timeout(config.mcpServer.toolCallRequestTimeout)
+                return tool.handler(args, abortSignal)
+            })
     })
 
     // todo add resources and such later?

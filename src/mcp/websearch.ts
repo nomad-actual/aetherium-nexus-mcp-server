@@ -54,16 +54,6 @@ function filterSites(searchResults: SearXNGResult[], config: AetheriumConfig) {
 }
 
 
-
-async function abortableSearch(args: any, config: AetheriumConfig): Promise<CallToolResult> {
-    const abortSignal = AbortSignal.timeout(config.mcpServer.toolCallRequestTimeout)
-    return await abort(
-        search(args, config, abortSignal),
-        abortSignal,
-        'Search aborted due to timeout.'
-    )
-}
-
 export async function search(args: any, config: AetheriumConfig, signal: AbortSignal): Promise<CallToolResult> {
     // crawl each site and retrieve html for summarization
     const start = Date.now()
@@ -139,9 +129,9 @@ export function buildWebSearchTool(): ToolsDef {
                 openWorldHint: true,
             }
         },
-        handler: async(args: any) => {
+        handler: async(args: any, signal: AbortSignal) => {
             const config = getConfig()
-            return abortableSearch(args, config)
+            return search(args, config, signal)
         }
     }
 }

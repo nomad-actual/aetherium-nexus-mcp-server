@@ -4,13 +4,14 @@ import { getConfig } from '../utils/config.js'
 import { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import { formatDate, formatDateTime } from '../utils/formatter.js'
 import logger from '../utils/logger.js'
+import { abort } from '../utils/promises.js'
 
-export async function getTime(config: NtpConfig): Promise<Date> {
+export async function getTime(config: NtpConfig, abortSignal: AbortSignal): Promise<Date> {
     try {
         const { host, port = 123, timeout } = config
         const client = new NTP(host, port, { timeout })
 
-        const packet = await client.syncTime()
+        const packet = await abort(client.syncTime(), abortSignal, 'Global timeout reached')
 
         // will need better logging levels (aka pino)
         logger.info(`Time retrieved ${packet.time}`)
@@ -23,8 +24,8 @@ export async function getTime(config: NtpConfig): Promise<Date> {
     }
 }
 
-async function timeHandler(config: AetheriumConfig): Promise<CallToolResult> {
-    const time = await getTime(config.timeserver)
+async function timeHandler(config: AetheriumConfig, abortSignal: AbortSignal): Promise<CallToolResult> {
+    const time = await getTime(config.timeserver, abortSignal)
     const formattedTime = formatDateTime(time, config.locale, config.defaultLocation.timezone)
     const oldStyle = formatDate(time, config.locale)
 
@@ -48,9 +49,9 @@ export function buildTimeTool(): ToolsDef {
                 openWorldHint: true
             } 
         },
-        handler: async () => {
+        handler: async (_, abortSignal: AbortSignal) => {
             const config = getConfig()
-            return timeHandler(config)
+            return timeHandler(config, abortSignal)
         },
     }
 }

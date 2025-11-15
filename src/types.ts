@@ -188,6 +188,6 @@ export type RagSearchResult = {
 export type ToolsDef = {
     name: string
     config: any
-    handler(args: any): Promise<CallToolResult>
+    handler(args: any, signal: AbortSignal): Promise<CallToolResult>
 }
 

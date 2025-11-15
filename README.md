@@ -25,16 +25,16 @@ My collection of MCP tools
 - [x] basic opensearch integration
 - [x] RAG - basic indexing and searching on some files
 - [x] RAG - basic opensearch support
+- [x] Fix ghetto weather location lookups (no default)
 - [x] long scraping times should be aborted (via signals/timeouts) or some other/better UI/UX feedback should be employed
+- [x] abort signal passed in from tool call
 
 ### In Progress
 
-- [ ] Fix ghetto weather location lookups (no default)
+- [ ] reddit comment parsing (configurable levels deep and limit the total of 10 comments per thread)
 
 ### todo
 
-- [ ] reddit comment parsing (configurable levels deep and limit the total of 10 comments per thread)
-  - semantic parsing would be cool
 - [ ] fix prod package tracker not taking screenshots because browser process won't start
 - [ ] youtube downloader (yt-dlp)
 - [ ] youtube transcription (yt-dlp -> ffmpeg 8.0+ or whisper)

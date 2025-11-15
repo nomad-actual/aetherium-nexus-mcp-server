@@ -6,14 +6,12 @@ import { doWebScrape } from '../utils/webscraper/webscraper.js'
 import { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import { abort } from '../utils/promises.js'
 
-async function scrape(args: { url: string }, config: AetheriumConfig): Promise<CallToolResult> {
+async function scrape(args: { url: string }, config: AetheriumConfig, abortSignal: AbortSignal): Promise<CallToolResult> {
     try {
         logger.info(`Scraping webpage ${args.url}...`)
 
         // todo change this to one much larger since it's just a single page
         // adjust as needed but can't find hacker news?
-
-        const abortSignal = AbortSignal.timeout(config.mcpServer.toolCallRequestTimeout)
 
         const scrapeOpts: ScrapeOptions = {
             maxContentLength: config.search.contentLimit,
@@ -24,7 +22,7 @@ async function scrape(args: { url: string }, config: AetheriumConfig): Promise<C
             signal: abortSignal
         }
 
-        const contents = await abort(doWebScrape(args.url, scrapeOpts), abortSignal, 'Web scraping aborted due to timeout') as any
+        const contents = await doWebScrape(args.url, scrapeOpts) as any
 
         return { content: contents }
     } catch (error) {
@@ -53,9 +51,9 @@ export function buildWebScraperTool(): ToolsDef {
                 openWorldHint: true,
             },
         },
-        handler: async (args: any) => {
+        handler: async (args: any, signal: AbortSignal) => {
             const config = getConfig()
-            return scrape(args, config)
+            return scrape(args, config, signal)
         },
     }
 }
