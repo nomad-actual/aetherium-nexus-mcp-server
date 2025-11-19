@@ -3,7 +3,6 @@ ENV NODE_ENV=production
 
 WORKDIR /app
 
-COPY package*.json ./
 COPY . .
 
 RUN npm ci --omit=dev  \
