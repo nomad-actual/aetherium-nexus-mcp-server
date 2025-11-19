@@ -1,11 +1,10 @@
-import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+import type { CallToolResult } from '@modelcontextprotocol/sdk/types.d.ts';
 import axios from 'axios';
 import z from 'zod';
 
-import { AetheriumConfig, ScrapeOptions, ToolsDef } from '../types.js';
-import { getConfig } from '../utils/config.js';
-import { doWebScrape } from '../utils/webscraper/webscraper.js';
-import { abort } from '../utils/promises.js';
+import type { AetheriumConfig, ScrapeOptions, ToolsDef } from '../types.ts';
+import { getConfig } from '../utils/config.ts';
+import { doWebScrape } from '../utils/webscraper/webscraper.ts';
 
 type SearXNGResult = {
     url: string,

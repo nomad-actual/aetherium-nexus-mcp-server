@@ -31,6 +31,7 @@ My collection of MCP tools
 
 ### In Progress
 
+- [ ] native TS on node
 - [ ] reddit comment parsing (configurable levels deep and limit the total of 10 comments per thread)
 
 ### todo

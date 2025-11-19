@@ -1,27 +1,16 @@
-# Stage 1: Build stage
-FROM node:22-alpine3.22 AS builder
-
-WORKDIR /app
-
-COPY package*.json ./
-RUN npm install && npm cache clean --force
-
-COPY . .
-RUN npm run build
-
-# Stage 2: Runner stage
-FROM node:22-alpine3.22 AS runner
+FROM node:22-alpine3.22
 ENV NODE_ENV=production
 
 WORKDIR /app
 
-# Copy only the necessary files from the builder stage
-COPY --from=builder /app/dist ./dist
 COPY package*.json ./
+COPY . .
 
-RUN npm ci --omit=dev && npm cache clean --force && npm prune --production
+RUN npm ci --omit=dev  \
+    && npm prune --production \
+    # Clean the apk cache to shave ~1 MiB
+    && rm -rf /var/cache/apk/*
 
 EXPOSE 3000
 
-# Start the application
 CMD ["npm", "start"]

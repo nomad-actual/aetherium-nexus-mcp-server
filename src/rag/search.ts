@@ -1,8 +1,8 @@
 import { Ollama } from 'ollama'
-import { AetheriumConfig, RagSearchResult } from '../types.js'
-import { getConfig } from '../utils/config.js';
-import { formatDuration } from '../utils/formatter.js';
-import { getRagDatastore } from './database/datastore.js';
+import type { AetheriumConfig, RagSearchResult } from '../types.ts'
+import { getConfig } from '../utils/config.ts';
+import { formatDuration } from '../utils/formatter.ts';
+import { getRagDatastore } from './database/datastore.ts';
 
 const ollamaClient = new Ollama({ host: getConfig().llmClient.host  })
 

@@ -2,13 +2,13 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import {
     buildCurrentWeatherTool,
     buildForecastTool,
-} from '../mcp/weather.js'
-import type { ToolsDef, AetheriumConfig } from '../types.js'
-import { buildTimeTool } from '../mcp/time.js'
-import { buildWebSearchTool } from '../mcp/websearch.js'
-import { buildPackageTrackingTool } from '../mcp/trackpackage.js'
-import { buildWebScraperTool } from '../mcp/website-scraper.js'
-import { buildSearchTool } from '../mcp/search.js'
+} from '../mcp/weather.ts'
+import type { ToolsDef, AetheriumConfig } from '../types.ts'
+import { buildTimeTool } from '../mcp/time.ts'
+import { buildWebSearchTool } from '../mcp/websearch.ts'
+import { buildPackageTrackingTool } from '../mcp/trackpackage.ts'
+import { buildWebScraperTool } from '../mcp/website-scraper.ts'
+// import { buildSearchTool } from '../mcp/search.ts'
 
 const toolsDef: ToolsDef[] = [
     buildCurrentWeatherTool(),

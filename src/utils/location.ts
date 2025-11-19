@@ -1,7 +1,7 @@
 
 import axios from 'axios';
-import type { City, LocationResult } from '../types.js';
-import logger from './logger.js';
+import type { City, LocationResult } from '../types.ts';
+import logger from './logger.ts';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 

@@ -1,17 +1,10 @@
 {
-  "extends": "@tsconfig/node22/tsconfig.json",
   "compilerOptions": {
-    "rootDir": "./src",
-    "outDir": "dist",
-    "moduleDetection": "force",
-    "noImplicitOverride": true,
-  },
-  "include": [
-    "src/**/*.ts",
-    "test/**/*.ts",
-    "src/**/*.json"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+    "target": "esnext",
+    "module": "nodenext",
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true
+  }
 }

@@ -1,27 +1,26 @@
 {
-  "name": "mcp-test",
+  "name": "aetheium-nexus",
   "version": "1.0.0",
   "description": "",
-  "main": "app.js",
+  "main": "app.ts",
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc",
-    "start:dev": "npm run build && node --env-file=.env dist/app.js",
-    "start": "node dist/app.js",
-    "rag:ingest": "npm run build && node --env-file=.env dist/rag/indexer.js",
-    "rag:reset": "npm run build && node --env-file=.env dist/rag/reset.js",
-    "rag:search": "npm run build && node --env-file=.env dist/rag/search.js",
-    "rag:temp": "npm run build && node --env-file=.env dist/rag/temp.js"
+    "start:dev": "node --env-file=.env src/app.ts",
+    "start": "node src/app.ts",
+    "rag:ingest": "node --env-file=.env src/rag/indexer.js",
+    "rag:reset": "node --env-file=.env src/rag/reset.js",
+    "rag:search": "node --env-file=.env src/rag/search.js",
+    "rag:temp": "node --env-file=.env src/rag/temp.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@langchain/community": "1.0.3",
-    "@langchain/core": "1.0.5",
+    "@langchain/community": "1.0.4",
+    "@langchain/core": "1.0.6",
     "@langchain/textsplitters": "1.0.0",
-    "@modelcontextprotocol/sdk": "^1.20.1",
+    "@modelcontextprotocol/sdk": "^1.22.0",
     "@mozilla/readability": "^0.6.0",
     "@opensearch-project/opensearch": "^3.5.1",
     "axios": "^1.13.2",
@@ -42,12 +41,11 @@
     "zod-openapi": "^5.4.3"
   },
   "devDependencies": {
-    "@openmeteo/sdk": "^1.22.0",
-    "@tsconfig/node22": "^22.0.2",
+    "@openmeteo/sdk": "^1.23.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.5",
     "@types/jsdom": "^27.0.0",
-    "@types/node": "^24.9.1",
+    "@types/node": "^24.10.1",
     "typescript": "^5.9.3"
   }
 }

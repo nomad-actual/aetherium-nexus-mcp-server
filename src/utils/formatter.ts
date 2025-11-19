@@ -1,4 +1,4 @@
-import type { AetheriumLocaleOptions } from '../types.js'
+import type { AetheriumLocaleOptions } from '../types.ts'
 
 export function formatTemperature(temperature: number, localeOpts: AetheriumLocaleOptions) {
     const unit = localeOpts.units === 'metric' ? 'celsius' : 'fahrenheit'

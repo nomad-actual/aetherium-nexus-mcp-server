@@ -1,13 +1,11 @@
-import { getTracking, TrackingNumber } from "ts-tracking-number";
-import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+import { getTracking, type TrackingNumber } from "ts-tracking-number";
+import type { CallToolResult } from '@modelcontextprotocol/sdk/types.d.ts';
 import z from 'zod';
 
-import { AetheriumConfig, ToolsDef } from '../types.js';
-import { getConfig } from '../utils/config.js';
-import logger from '../utils/logger.js';
-import { screenshotWebPage } from '../utils/webscraper/webscraper.js';
-import { abort } from "../utils/promises.js";
-
+import type { AetheriumConfig, ToolsDef } from '../types.ts';
+import { getConfig } from '../utils/config.ts';
+import logger from '../utils/logger.ts';
+import { screenshotWebPage } from '../utils/webscraper/webscraper.ts';
 
 function trackOnePackage(packageNumber: string, config: AetheriumConfig): TrackingNumber | null {
     const info = getTracking(packageNumber);

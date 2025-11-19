@@ -1,7 +1,7 @@
-import { ScrapeOptions, ReadableWebpageContent, McpToolContent } from "../../types.js";
-import { IScraper } from "./IScraper.js";
+import type { ScrapeOptions, ReadableWebpageContent, McpToolContent } from "../../types.ts";
+import { type IScraper } from "./IScraper.ts";
 import axios from "axios";
-import logger from "../../utils/logger.js";
+import logger from "../../utils/logger.ts";
 
 
 export default class RedditScraper implements IScraper {

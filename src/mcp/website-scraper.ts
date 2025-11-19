@@ -1,10 +1,9 @@
 import z from 'zod'
-import { AetheriumConfig, ScrapeOptions, ToolsDef } from '../types.js'
-import { getConfig } from '../utils/config.js'
-import logger from '../utils/logger.js'
-import { doWebScrape } from '../utils/webscraper/webscraper.js'
-import { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
-import { abort } from '../utils/promises.js'
+import type { AetheriumConfig, ScrapeOptions, ToolsDef } from '../types.ts'
+import { getConfig } from '../utils/config.ts'
+import logger from '../utils/logger.ts'
+import { doWebScrape } from '../utils/webscraper/webscraper.ts'
+import type { CallToolResult } from '@modelcontextprotocol/sdk/types.d.ts'
 
 async function scrape(args: { url: string }, config: AetheriumConfig, abortSignal: AbortSignal): Promise<CallToolResult> {
     try {

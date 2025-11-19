@@ -1,10 +1,10 @@
 import express, { type Request, type Response } from 'express'
 import cors from 'cors'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
-import { buildMCPServer } from './server/mcp.server.js'
-import { getConfig } from './utils/config.js'
-import type { AetheriumConfig } from './types.js'
-import logger from './utils/logger.js'
+import { buildMCPServer } from './server/mcp.server.ts'
+import { getConfig } from './utils/config.ts'
+import type { AetheriumConfig } from './types.ts'
+import logger from './utils/logger.ts'
 
 const config: AetheriumConfig = getConfig()
 const corsAllowed = config.mcpServer.corsAllowedHosts

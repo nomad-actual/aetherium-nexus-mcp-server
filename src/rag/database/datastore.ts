@@ -1,6 +1,6 @@
-import { AetheriumConfig, RagSearchResult } from "../../types.js";
-import { JsonRagStore } from "./json.datastore.js";
-import { OpenSearchRagDatastore } from "./opensearch.js";
+import type { AetheriumConfig, RagSearchResult } from "../../types.ts";
+import { JsonRagStore } from "./json.datastore.ts";
+import { OpenSearchRagDatastore } from "./opensearch.ts";
 
 export type TempDbEntryMetadata = {
     uri: string,

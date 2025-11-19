@@ -1,10 +1,10 @@
 import { Client as NTP } from 'ntp-time'
-import type { AetheriumConfig, NtpConfig, ToolsDef } from '../types.js'
-import { getConfig } from '../utils/config.js'
-import { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
-import { formatDate, formatDateTime } from '../utils/formatter.js'
-import logger from '../utils/logger.js'
-import { abort } from '../utils/promises.js'
+import type { AetheriumConfig, NtpConfig, ToolsDef } from '../types.ts'
+import { getConfig } from '../utils/config.ts'
+import type { CallToolResult } from '@modelcontextprotocol/sdk/types.d.ts'
+import { formatDate, formatDateTime } from '../utils/formatter.ts'
+import logger from '../utils/logger.ts'
+import { abort } from '../utils/promises.ts'
 
 export async function getTime(config: NtpConfig, abortSignal: AbortSignal): Promise<Date> {
     try {

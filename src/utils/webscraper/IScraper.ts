@@ -1,5 +1,4 @@
-import { McpToolContent, ReadableWebpageContent, ScrapeOptions } from "../../types.js";
-
+import type { McpToolContent, ReadableWebpageContent, ScrapeOptions } from "../../types.ts";
 
 export interface IScraper {
     shouldAttempt(url: string): boolean;

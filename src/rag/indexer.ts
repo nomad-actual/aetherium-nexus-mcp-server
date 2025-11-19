@@ -1,10 +1,10 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { Ollama } from 'ollama'
-import { ingest } from './ingestor/ingestor.js';
-import { getConfig } from '../utils/config.js';
-import { AetheriumConfig } from '../types.js';
-import { getRagDatastore } from './database/datastore.js';
+import { ingest } from './ingestor/ingestor.ts';
+import { getConfig } from '../utils/config.ts';
+import { AetheriumConfig } from '../types.ts';
+import { getRagDatastore } from './database/datastore.ts';
 
 // todo: move to some AI client module
 const ollamaClient = new Ollama({ host: getConfig().llmClient.host })

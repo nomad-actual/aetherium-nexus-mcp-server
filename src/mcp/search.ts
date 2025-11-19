@@ -1,12 +1,12 @@
 
 import z from "zod"
-import { AetheriumConfig, ToolsDef } from "../types.js"
-import { getConfig } from "../utils/config.js"
-import { search } from "../rag/search.js"
-import { search as webSearch} from "./websearch.js"
-import { CallToolResult } from "@modelcontextprotocol/sdk/types.js"
-import { formatDate } from "../utils/formatter.js"
-import { getTime } from "./time.js"
+import type { AetheriumConfig, ToolsDef } from "../types.ts"
+import { getConfig } from "../utils/config.ts"
+import { search } from "../rag/search.ts"
+import { search as webSearch} from "./websearch.ts"
+import type { CallToolResult } from "@modelcontextprotocol/sdk/types.d.ts"
+import { formatDate } from "../utils/formatter.ts"
+import { getTime } from "./time.ts"
 
 
 // this will be an mcp which will search across the sum of 

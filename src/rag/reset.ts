@@ -1,6 +1,6 @@
-import { getConfig } from "../utils/config.js";
-import { getRagDatastore } from "./database/datastore.js";
-import { OpenSearchRagDatastore } from "./database/opensearch.js";
+import { getConfig } from "../utils/config.ts";
+import { getRagDatastore } from "./database/datastore.ts";
+import { OpenSearchRagDatastore } from "./database/opensearch.ts";
 
 const config = getConfig()
 

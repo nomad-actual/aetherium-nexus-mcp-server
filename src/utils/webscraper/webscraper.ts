@@ -1,9 +1,9 @@
 import puppeteer from 'puppeteer'
-import { McpToolContent, ScrapeOptions } from '../../types.js';
-import logger from '../logger.js';
-import BasicHtmlScraper from './BasicHtmlScraper.js';
-import RedditScraper from './RedditScraper.js';
-import { abort } from '../promises.js';
+import type { McpToolContent, ScrapeOptions } from '../../types.ts';
+import logger from '../logger.ts';
+import BasicHtmlScraper from './BasicHtmlScraper.ts';
+import RedditScraper from './RedditScraper.ts';
+import { abort } from '../promises.ts';
 
 type ScreenShotOptions = {
     width: number;
@@ -19,7 +19,7 @@ async function abortWrapper<T>(fn: Promise<T>, signal: AbortSignal) {
 }
 
 export async function screenshotWebPage(url: string, screenshotOptions: ScreenShotOptions) {
-    let browser = null
+    let browser: puppeteer.Browser
     
     const { width, height, timeout, signal } = screenshotOptions;
 

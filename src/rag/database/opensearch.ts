@@ -1,5 +1,5 @@
-import { RagSearchResult } from "../../types.js";
-import { RagDataStore, TempDataStoreLookupEmbeddingOptions } from "./datastore.js";
+import type { RagSearchResult } from "../../types.ts";
+import type { RagDataStore, TempDataStoreLookupEmbeddingOptions } from "./datastore.ts";
 import { Client } from '@opensearch-project/opensearch'
 
 export class OpenSearchRagDatastore implements RagDataStore {

@@ -1,10 +1,10 @@
 import { fetchWeatherApi } from 'openmeteo'
-import { closestMatch, findNearestCity, makeLocationString, searchLocation } from '../utils/location.js'
+import { closestMatch, findNearestCity, makeLocationString, searchLocation } from '../utils/location.ts'
 import z from 'zod'
-import { formatDate, formatDateTime, formatTemperature } from '../utils/formatter.js'
-import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
+import { formatDate, formatDateTime, formatTemperature } from '../utils/formatter.ts'
+import type { CallToolResult } from '@modelcontextprotocol/sdk/types.d.ts'
 import { WeatherApiResponse } from '@openmeteo/sdk/weather-api-response.js'
-import { getConfig } from '../utils/config.js'
+import { getConfig } from '../utils/config.ts'
 import type {
     AetheriumConfig,
     CurrentWeather,
@@ -14,9 +14,9 @@ import type {
     ToolsDef,
     WeatherData,
     WeatherQuery,
-} from '../types.js'
-import logger from '../utils/logger.js'
-import { getTime } from './time.js'
+} from '../types.ts'
+import logger from '../utils/logger.ts'
+import { getTime } from './time.ts'
 
 const currentVars = ['temperature_2m', 'precipitation', 'rain', 'weather_code']
 const dailyVars = [

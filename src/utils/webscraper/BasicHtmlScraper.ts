@@ -1,10 +1,10 @@
-import { McpToolContent, ReadableWebpageContent, ScrapeOptions } from '../../types.js'
-import { IScraper } from './IScraper.js'
+import type { McpToolContent, ReadableWebpageContent, ScrapeOptions } from '../../types.ts'
+import { type IScraper } from './IScraper.ts'
 import { Readability } from '@mozilla/readability'
-import { capitalizeFirstLetter } from '../formatter.js'
-import logger from '../logger.js'
+import { capitalizeFirstLetter } from '../formatter.ts'
+import logger from '../logger.ts'
 import { JSDOM, VirtualConsole } from 'jsdom'
-import { abort } from '../promises.js'
+import { abort } from '../promises.ts'
 
 
 export default class BasicHtmlScraper implements IScraper {

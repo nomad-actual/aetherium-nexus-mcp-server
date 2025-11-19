@@ -1,7 +1,7 @@
 import { cosineSimilarity } from "fast-cosine-similarity";
-import { DbEntry, RagDataStore, TempDataStoreLookupEmbeddingOptions } from "./datastore.js";
+import type { DbEntry, RagDataStore, TempDataStoreLookupEmbeddingOptions } from "./datastore.ts";
 import fs from 'fs/promises';
-import { RagSearchResult, RagSearchResultMetadata } from "../../types.js";
+import type { RagSearchResult, RagSearchResultMetadata } from "../../types.ts";
 import { BM25Retriever } from "@langchain/community/retrievers/bm25";
 
 export class JsonRagStore implements RagDataStore {

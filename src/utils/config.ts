@@ -1,5 +1,5 @@
 import { find } from 'geo-tz'
-import { AetheriumConfig, UnitStyle } from '../types.js';
+import type { AetheriumConfig, UnitStyle } from '../types.ts';
 
 function parseMonthStyle(monthStyle: string): UnitStyle {
     switch (monthStyle.toLowerCase()) {

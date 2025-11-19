@@ -8,7 +8,7 @@ import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
 import { OfficeParserConfig, parseOfficeAsync } from 'officeparser'
 
 // this is really just naive chunking
-import { chunkText } from "../../utils/text.chunker.js";
+import { chunkText } from "../../utils/text.chunker.ts";
 
 
 const tokenEncoder = new Tiktoken(o200k_base);
