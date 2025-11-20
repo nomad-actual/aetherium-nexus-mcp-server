@@ -35,7 +35,6 @@ My collection of MCP tools
 
 - [ ] investigate prod package tracker not taking screenshots because browser process won't start
 
-
 ### todo
 
 - [ ] youtube downloader (yt-dlp)
