@@ -153,6 +153,7 @@ export type ReadableWebpageContent = {
     lang: string;
     publishedTime: string;
     scrapeDuration: string;
+    meta: any
 }
 
 export type McpToolContent = {
