@@ -4,31 +4,6 @@ import axios from "axios";
 import logger from "../../utils/logger.ts";
 
 
-type RedditPost = {
-    id: string,
-    title: string,
-    author: string,
-    url: string,
-    content: string,
-    createdUtc: Date,
-    comments: RedditComment[]
-}
-
-
-type RedditComment = {
-    id: string
-    parentId: string
-    author: string
-    createdUtc: Date
-    content: string
-    upVotes: number
-    downVotes: number
-}
-
-
-
-
-
 export default class RedditScraper implements IScraper {
     shouldAttempt(url: string): boolean {
         return url.startsWith('https://www.reddit.com') && url.includes('/comments/');
@@ -58,7 +33,6 @@ export default class RedditScraper implements IScraper {
         // so
         // content: 0 -> data -> children -> 0 -> selftext
         // title: 0 -> data -> children -> 0 -> title
-        // 1 is comments which might be useful to send back
 
         // determine if reddit data is valid, can always fall back to html
         const mainPosting = (this.unwrapRedditObj(data[0]) || [])[0]?.data;
@@ -68,27 +42,28 @@ export default class RedditScraper implements IScraper {
 
         const author = mainPosting.author;
         const content = mainPosting.selftext;
-        const title = `Posted by: ${author}: ${mainPosting.title}`;
+        const title = mainPosting.title;
         const postedDate = new Date(mainPosting.created_utc * 1000);
 
         const stuff: ReadableWebpageContent = {
             content,
             title,
-            lang: 'Unknown',
+            lang: '', // kinda useless
             publishedTime: postedDate.toISOString(),
             siteName: 'Reddit',
             url,
             scrapeDuration: `${(Date.now() - startTime) / 1000} seconds`,
             meta: {
-                // todo: add scores to eliminate if we need to 
-                // flag that this might not be very reputable
+                author,
+                score: mainPosting.score || 0,
+                ups: mainPosting.ups || 0,
+                downs: mainPosting.downs || 0,
+                upvoteRatio: mainPosting.upvote_ratio,
             }
         }
 
-        // does not parse replies but main post is more important for now
-        // todo: parse replies
-
-        const scrapedComments = this.scrapeComments(this.unwrapRedditObj(data[1]), { maxCommentDepth: 5, level: 0 })
+        // todo config max comment depth
+        const scrapedComments = this.scrapeComments(this.unwrapRedditObj(data[1]), { maxCommentDepth: 5 })
 
         return [stuff, ...scrapedComments]
     }
@@ -97,15 +72,18 @@ export default class RedditScraper implements IScraper {
         return redditListing?.data?.children || redditListing?.data?.replies || []
     }
 
-    private scrapeComments(commentList: any[], commentScrapeOpts: { level: number, maxCommentDepth: number}): ReadableWebpageContent[] {
-        if (!Array.isArray(commentList) || commentList.length === 0 || commentScrapeOpts.level >= commentScrapeOpts.maxCommentDepth) {
+    private scrapeComments(commentList: any[], commentScrapeOpts: { maxCommentDepth: number}, level?: number): ReadableWebpageContent[] {
+        const safeLevel = level || 0
+
+        if (!Array.isArray(commentList) || commentList.length === 0 || safeLevel >= commentScrapeOpts.maxCommentDepth) {
             return []
         }
         const originalStart = Date.now()
         const comments: ReadableWebpageContent[] = []
 
         // unwrap because each comment is an object like { kind: string, data: object }
-        for (const { data: comment } of commentList) {
+        for (const dataObj of commentList) {
+            const { data: comment } = dataObj 
             // todo: escape urls or any injection paths if body does not already do so
             // todo: configurable max comment content
             let content = (comment.body as string).trim().substring(0, 1000)
@@ -131,11 +109,11 @@ export default class RedditScraper implements IScraper {
             }
             
             const replies = this.unwrapRedditObj(comment.replies)
-            const children = this.scrapeComments(replies, { ...commentScrapeOpts, level: commentScrapeOpts.level + 1 })
+            const children = this.scrapeComments(replies, { ...commentScrapeOpts }, safeLevel + 1)
 
-            // highest ranked only (max of say 5)
+            // consider highest ranked only in each reply thread
+            // also consider an aggregate scoring
             // children.sort((a, b) => b.meta.score - a.meta.score).slice(0, 5)
-
             rc.meta.replies = children
                 .sort((a, b) => b.meta.score - a.meta.score)
                 .slice(0, 5)
@@ -151,18 +129,22 @@ export default class RedditScraper implements IScraper {
         const replies = this.getReplies(reply)
                 .map(r => this.formatReply(r))
                 .join('\n\n')
-                .trim()
 
-        const basic = `Author: ${reply.meta.author} Published: ${reply.publishedTime}
-        Content: ${reply.content}`
+        const basic = 
+`
+Author: ${reply.meta.author}
+Published: ${reply.publishedTime}
+Score: ${reply.meta.score}
+Content: ${reply.content}`
         
         if (!replies) {
             return basic
         }
         
         return `${basic}
-            Replies:
-                ${replies || 'None'}`
+Replies:
+    ${replies}
+`
     }
 
     private getReplies(rwc: ReadableWebpageContent) {
@@ -173,7 +155,7 @@ export default class RedditScraper implements IScraper {
         const [redditData] = contents
         const comments = contents
             .slice(1)
-            .map((comment) => ({ type: 'text', text: this.formatReply(comment) }))
+            .map((comment) => ({ type: 'text', text: this.formatReply(comment).trim() }))
 
         const metadata = 
         `Content for: ${
