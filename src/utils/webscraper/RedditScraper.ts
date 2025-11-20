@@ -61,7 +61,7 @@ export default class RedditScraper implements IScraper {
         // 1 is comments which might be useful to send back
 
         // determine if reddit data is valid, can always fall back to html
-        const mainPosting = data[0]?.data?.children[0]?.data;
+        const mainPosting = (this.unwrapRedditObj(data[0]) || [])[0]?.data;
         if (!mainPosting) {
             return null
         }
@@ -79,41 +79,21 @@ export default class RedditScraper implements IScraper {
             siteName: 'Reddit',
             url,
             scrapeDuration: `${(Date.now() - startTime) / 1000} seconds`,
+            meta: {
+                // todo: add scores to eliminate if we need to 
+                // flag that this might not be very reputable
+            }
         }
 
         // does not parse replies but main post is more important for now
         // todo: parse replies
 
-        const scrapedComments = this.scrapeComments(this.getCommentChildren(data[1]), { maxCommentDepth: 5, level: 0 })
+        const scrapedComments = this.scrapeComments(this.unwrapRedditObj(data[1]), { maxCommentDepth: 5, level: 0 })
 
-        const comments = data[1]?.data?.children.map((child: any) => {
-            const comment = child.data;
-
-            // max length applies here
-            const content = comment.body;
-            const author = comment.author;
-            const commentUrl = `https://www.reddit.com${comment.permalink}`;
-            const postedDate = new Date(comment.created_utc * 1000);
-
-            const stuff: ReadableWebpageContent = {
-                content,
-                title: `Comment author: ${author}`,
-                lang: 'Unknown',
-                publishedTime: postedDate.toISOString(),
-                siteName: 'Reddit',
-                url: commentUrl,
-                scrapeDuration: `${(Date.now() - startTime) / 1000} seconds`,
-                meta: {
-                }
-            }
-
-            return stuff
-        })
-
-        return [stuff, ...comments]
+        return [stuff, ...scrapedComments]
     }
 
-    private getCommentChildren(redditListing: any) {
+    private unwrapRedditObj(redditListing: any) {
         return redditListing?.data?.children || redditListing?.data?.replies || []
     }
 
@@ -130,13 +110,13 @@ export default class RedditScraper implements IScraper {
             // todo: configurable max comment content
             let content = (comment.body as string).trim().substring(0, 1000)
             if (comment.score < 0) {
-                content = '(omitted for bad score)'
+                content = '(omitted - bad score)'
             }
 
             const rc: ReadableWebpageContent = {
                 content,
-                title: `Comment author: ${comment.author}`,
-                lang: 'Unknown',
+                title: `Reply author: ${comment.author}`,
+                lang: '',
                 publishedTime: new Date(comment.created_utc * 1000).toISOString(),
                 siteName: 'Reddit',
                 url: `https://www.reddit.com${comment.permalink}`,
@@ -145,11 +125,12 @@ export default class RedditScraper implements IScraper {
                     author: comment.author,
                     ups: comment.ups as number,
                     downs: comment.downs as number,
-                    score: comment.score as number
+                    score: comment.score as number,
+                    replies: [] as ReadableWebpageContent[]
                 }
             }
             
-            const replies = this.getCommentChildren(comment.replies)
+            const replies = this.unwrapRedditObj(comment.replies)
             const children = this.scrapeComments(replies, { ...commentScrapeOpts, level: commentScrapeOpts.level + 1 })
 
             // highest ranked only (max of say 5)
@@ -166,45 +147,50 @@ export default class RedditScraper implements IScraper {
     }
 
 
+    private formatReply(reply: ReadableWebpageContent) {
+        const replies = this.getReplies(reply)
+                .map(r => this.formatReply(r))
+                .join('\n\n')
+                .trim()
 
-    // todo: parse a number of levels deep
-    formatComments(comments: ReadableWebpageContent[]): McpToolContent[]  {
-        return comments.map((comment) => {
-            const commentContent = 
-                `Reddit comment for: ${
-                    comment.url
-                } Date Published: ${
-                    comment?.publishedTime
-                } Comment Content: ${
-                    comment.content
-                } Replies`
+        const basic = `Author: ${reply.meta.author} Published: ${reply.publishedTime}
+        Content: ${reply.content}`
+        
+        if (!replies) {
+            return basic
+        }
+        
+        return `${basic}
+            Replies:
+                ${replies || 'None'}`
+    }
 
-            return { type: 'text', text: commentContent }
-        })
+    private getReplies(rwc: ReadableWebpageContent) {
+        return (rwc.meta.replies || []) as ReadableWebpageContent[]
     }
 
     async buildResult(contents: ReadableWebpageContent[], scrapeOpts: ScrapeOptions): Promise<McpToolContent[]> {
         const [redditData] = contents
-        const comments = contents.slice(1)
+        const comments = contents
+            .slice(1)
+            .map((comment) => ({ type: 'text', text: this.formatReply(comment) }))
 
         const metadata = 
-        `Main Content for: ${
+        `Content for: ${
             redditData.url
-        } Language: ${
-            redditData?.lang || '(Not found)'
         } Date Published: ${
-            redditData?.publishedTime
-        } Site Name: ${
-            redditData?.siteName
+            redditData.publishedTime
+        } Site: ${
+            redditData.siteName
         } Title: ${
-            redditData?.title
+            redditData.title
         } Scrape Duration (sec): ${redditData.scrapeDuration}`
 
         const result: any[] = [
             { type: 'text', text: metadata },
             { type: 'text', text: JSON.stringify(redditData || '') },
             { type: 'text', text: '--- Comments ---' },
-            ...this.formatComments(comments),
+            ...comments,
         ]
 
         return result
