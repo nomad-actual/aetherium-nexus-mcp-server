@@ -28,10 +28,10 @@ My collection of MCP tools
 - [x] Fix ghetto weather location lookups (no default)
 - [x] long scraping times should be aborted (via signals/timeouts) or some other/better UI/UX feedback should be employed
 - [x] abort signal passed in from tool call
+- [x] native TS on node
 
 ### In Progress
 
-- [ ] native TS on node
 - [ ] reddit comment parsing (configurable levels deep and limit the total of 10 comments per thread)
 
 ### todo
