@@ -33,10 +33,12 @@ My collection of MCP tools
 
 ### In Progress
 
+- [ ] configurable reddit scraping
 - [ ] investigate prod package tracker not taking screenshots because browser process won't start
 
 ### todo
 
+- [ ] OSINT research module
 - [ ] youtube downloader (yt-dlp)
 - [ ] youtube transcription (yt-dlp -> ffmpeg 8.0+ or whisper)
 
@@ -46,7 +48,6 @@ My collection of MCP tools
 - [ ] RAG - indexer "cron?"
 - [ ] openai compat instead of ollama to prep from move off to (vllm, llama.cpp, or aphrodite)
 - [ ] OpenAPI for tools
-- [ ] phone number lookup (first OSINT tooling)
 - [ ] How might a Researcher work?
 - [ ] move the ui over or merge projects?
 - [ ] for advanced scraping, consider using python libraries or porting it over to node.jss
