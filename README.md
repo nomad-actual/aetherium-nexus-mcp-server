@@ -29,14 +29,15 @@ My collection of MCP tools
 - [x] long scraping times should be aborted (via signals/timeouts) or some other/better UI/UX feedback should be employed
 - [x] abort signal passed in from tool call
 - [x] native TS on node
+- [x] reddit comment parsing (configurable levels deep and limit the total of 10 comments per thread)
 
 ### In Progress
 
-- [ ] reddit comment parsing (configurable levels deep and limit the total of 10 comments per thread)
+- [ ] investigate prod package tracker not taking screenshots because browser process won't start
+
 
 ### todo
 
-- [ ] fix prod package tracker not taking screenshots because browser process won't start
 - [ ] youtube downloader (yt-dlp)
 - [ ] youtube transcription (yt-dlp -> ffmpeg 8.0+ or whisper)
 

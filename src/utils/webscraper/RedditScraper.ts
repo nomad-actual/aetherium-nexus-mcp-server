@@ -9,6 +9,14 @@ export default class RedditScraper implements IScraper {
         return url.startsWith('https://www.reddit.com') && url.includes('/comments/');
     }
 
+    private catchTimeCrash(s: number, stuff: any): string {
+        try {
+            return new Date(s).toISOString()
+        } catch (e) {
+            logger.warn({ message: "Error parsing date:", error: e, stuff })
+        }
+    }
+
     async scrape(url: string, scrapeOpts: ScrapeOptions): Promise<any | null> {
         const startTime = Date.now();
 
@@ -43,13 +51,13 @@ export default class RedditScraper implements IScraper {
         const author = mainPosting.author;
         const content = mainPosting.selftext;
         const title = mainPosting.title;
-        const postedDate = new Date(mainPosting.created_utc * 1000);
+        const postedDate = this.catchTimeCrash(mainPosting.created_utc * 1000, mainPosting);
 
         const stuff: ReadableWebpageContent = {
             content,
             title,
             lang: '', // kinda useless
-            publishedTime: postedDate.toISOString(),
+            publishedTime: postedDate,
             siteName: 'Reddit',
             url,
             scrapeDuration: `${(Date.now() - startTime) / 1000} seconds`,
@@ -62,8 +70,13 @@ export default class RedditScraper implements IScraper {
             }
         }
 
+        const comments = this.unwrapRedditObj(data[1])
+
+        // todo config - top comments
+        const topComments = this.getTopVotedMax(comments, 30)
+        
         // todo config max comment depth
-        const scrapedComments = this.scrapeComments(this.unwrapRedditObj(data[1]), { maxCommentDepth: 5 })
+        const scrapedComments = this.scrapeComments(topComments, { maxCommentDepth: 5 })
 
         return [stuff, ...scrapedComments]
     }
@@ -72,30 +85,66 @@ export default class RedditScraper implements IScraper {
         return redditListing?.data?.children || redditListing?.data?.replies || []
     }
 
+
+    // this is a naive sorting and will filter out negatively-started threads
+    // but this will potentially miss good conversations at 1-level deeper
+    // potential improvement ^
+    private getTopVotedMax(redditListing: any[], maxComments: number): any[] {
+        return redditListing
+            .filter(l => !this.shouldOmitComment(l)) // note the !
+            .sort((a, b) => b.data.score - a.data.score)
+            .slice(0, maxComments)
+    }
+
+    private shouldOmitComment(comment: any): boolean {
+        const wrongType = comment.kind === 'more'
+        if (wrongType) {
+            return true
+        }
+        
+        // removed content
+        const commentContent = (comment.data.body || '').trim()
+        const deletedOrRemovedContent = [
+            '[removed]',
+            '[deleted]'
+        ].some((s) => s === commentContent)
+        
+        return deletedOrRemovedContent
+    }
+
     private scrapeComments(commentList: any[], commentScrapeOpts: { maxCommentDepth: number}, level?: number): ReadableWebpageContent[] {
         const safeLevel = level || 0
 
         if (!Array.isArray(commentList) || commentList.length === 0 || safeLevel >= commentScrapeOpts.maxCommentDepth) {
             return []
         }
+
         const originalStart = Date.now()
         const comments: ReadableWebpageContent[] = []
 
         // unwrap because each comment is an object like { kind: string, data: object }
         for (const dataObj of commentList) {
+            if (this.shouldOmitComment(dataObj)) {
+                continue
+            }
+
             const { data: comment } = dataObj 
             // todo: escape urls or any injection paths if body does not already do so
             // todo: configurable max comment content
-            let content = (comment.body as string).trim().substring(0, 1000)
+            // possible chunk similar to RAG max length to end of sentence chunking
+            let content = ((comment.body || '') as string).substring(0, 1000).trim()
+
             if (comment.score < 0) {
                 content = '(omitted - bad score)'
             }
+
+            const replyPosted = this.catchTimeCrash(comment.created_utc * 1000, comment)
 
             const rc: ReadableWebpageContent = {
                 content,
                 title: `Reply author: ${comment.author}`,
                 lang: '',
-                publishedTime: new Date(comment.created_utc * 1000).toISOString(),
+                publishedTime: replyPosted,
                 siteName: 'Reddit',
                 url: `https://www.reddit.com${comment.permalink}`,
                 scrapeDuration: `${(Date.now() - originalStart) / 1000} seconds`,
@@ -116,7 +165,8 @@ export default class RedditScraper implements IScraper {
             // children.sort((a, b) => b.meta.score - a.meta.score).slice(0, 5)
             rc.meta.replies = children
                 .sort((a, b) => b.meta.score - a.meta.score)
-                .slice(0, 5)
+                // the deeper we go, the fewer high-ranking comments we want
+                .slice(0, Math.max(commentScrapeOpts.maxCommentDepth - safeLevel, 1))
 
             comments.push(rc)
         }
