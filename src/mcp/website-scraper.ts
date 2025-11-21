@@ -1,5 +1,5 @@
 import z from 'zod'
-import type { AetheriumConfig, ScrapeOptions, ToolsDef } from '../types.ts'
+import type { AetheriumConfig, ToolsDef } from '../types.ts'
 import { getConfig } from '../utils/config.ts'
 import logger from '../utils/logger.ts'
 import { doWebScrape } from '../utils/webscraper/webscraper.ts'
@@ -9,19 +9,7 @@ async function scrape(args: { url: string }, config: AetheriumConfig, abortSigna
     try {
         logger.info(`Scraping webpage ${args.url}...`)
 
-        // todo change this to one much larger since it's just a single page
-        // adjust as needed but can't find hacker news?
-
-        const scrapeOpts: ScrapeOptions = {
-            maxContentLength: config.search.contentLimit,
-            // not used
-            minScore: 20,
-            minReadableLength: 140,
-            timeout: config.search.timeout,
-            signal: abortSignal
-        }
-
-        const contents = await doWebScrape(args.url, scrapeOpts) as any
+        const contents = await doWebScrape(args.url, config, abortSignal) as any
 
         return { content: contents }
     } catch (error) {

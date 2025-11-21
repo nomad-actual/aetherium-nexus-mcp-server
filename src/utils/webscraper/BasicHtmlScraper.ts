@@ -1,4 +1,4 @@
-import type { McpToolContent, ReadableWebpageContent, ScrapeOptions } from '../../types.ts'
+import type { AetheriumConfig, McpToolContent, ReadableWebpageContent } from '../../types.ts'
 import { type IScraper } from './IScraper.ts'
 import { Readability } from '@mozilla/readability'
 import { capitalizeFirstLetter } from '../formatter.ts'
@@ -8,7 +8,7 @@ import { abort } from '../promises.ts'
 
 
 export default class BasicHtmlScraper implements IScraper {
-    async scrape(url: string, scrapeOpts: ScrapeOptions): Promise<any | null> {
+    async scrape(url: string, config: AetheriumConfig, signal: AbortSignal): Promise<any | null> {
         const startTime = Date.now()
 
         const virtualConsole = new VirtualConsole({ captureRejections: true })
@@ -19,11 +19,9 @@ export default class BasicHtmlScraper implements IScraper {
 
         const dom = await abort(
             JSDOM.fromURL(url, { virtualConsole }),
-            scrapeOpts.signal,
+            signal,
             'JSDOM aborted'
         )
-
-        logger.info({ message: `Scraping ${url}...`, dom })
 
         const reader = new Readability(dom.window.document)
 
@@ -49,8 +47,7 @@ export default class BasicHtmlScraper implements IScraper {
             .replaceAll(/\s{2,}/g, ' ')
             .trim()
 
-        const maxContentLength = scrapeOpts.maxContentLength
-
+        const maxContentLength = config.scraper.contentLimit
         if (processedTextContent.length > maxContentLength) {
             logger.debug(
                 `Truncating content to sentence closest to ${maxContentLength} characters`
@@ -76,7 +73,7 @@ export default class BasicHtmlScraper implements IScraper {
         }]
     }
 
-    async buildResult(contents: ReadableWebpageContent[], scrapeOpts: ScrapeOptions): Promise<McpToolContent[]> {
+    async buildResult(contents: ReadableWebpageContent[]): Promise<McpToolContent[]> {
         const [page] = contents
 
         const metadata = 

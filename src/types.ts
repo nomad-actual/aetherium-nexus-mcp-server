@@ -128,6 +128,21 @@ export type AetheriumConfig = {
         port: number
         timeout: number
     },
+    scraper: {
+        contentLimit: number,
+        timeout: number,
+        basicHtmlReader: {
+            minScore: number,
+            minReadableLength: number,
+        },
+        reddit: {
+            maxTopLevelComments: number,
+            commentMaxContent: number,
+            maxCommentDepth: number,
+            commentMaxPerThreadDepth: number,
+            ignoreComments: boolean,
+        }
+    },
     search: {
         host: string,
         timeout: number
@@ -135,14 +150,6 @@ export type AetheriumConfig = {
         maxResults: number
     },
     locale: AetheriumLocaleOptions,
-}
-
-export type ScrapeOptions = {
-    maxContentLength: number; // in characters to the closest sentence
-    minReadableLength: number; // in characters,
-    minScore: number,
-    timeout: number,
-    signal: AbortSignal
 }
 
 export type ReadableWebpageContent = {

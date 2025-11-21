@@ -1,4 +1,4 @@
-import type { ScrapeOptions, ReadableWebpageContent, McpToolContent } from "../../types.ts";
+import type { ReadableWebpageContent, McpToolContent, AetheriumConfig } from "../../types.ts";
 import { type IScraper } from "./IScraper.ts";
 import axios from "axios";
 import logger from "../../utils/logger.ts";
@@ -17,15 +17,15 @@ export default class RedditScraper implements IScraper {
         }
     }
 
-    async scrape(url: string, scrapeOpts: ScrapeOptions): Promise<any | null> {
+    async scrape(url: string, config: AetheriumConfig, signal: AbortSignal): Promise<any | null> {
         const startTime = Date.now();
 
         const overrideUrl = `${(url.endsWith('/') ? url.slice(0, -1) : url)}.json`
         const resp = await axios.request({
             method: 'GET',
             url: overrideUrl,
-            timeout: scrapeOpts.timeout,
-            signal: scrapeOpts.signal
+            timeout: config.scraper.timeout,
+            signal
         })
 
         if (resp.status !== 200) {
@@ -70,13 +70,9 @@ export default class RedditScraper implements IScraper {
             }
         }
 
-        const comments = this.unwrapRedditObj(data[1])
-
-        // todo config - top comments
-        const topComments = this.getTopVotedMax(comments, 30)
-        
-        // todo config max comment depth
-        const scrapedComments = this.scrapeComments(topComments, { maxCommentDepth: 5 })
+        const comments = config.scraper.reddit.ignoreComments ? [] : this.unwrapRedditObj(data[1])
+        const topComments = this.getTopVotedMax(comments, config.scraper.reddit.maxTopLevelComments)
+        const scrapedComments = this.scrapeComments(topComments, config)
 
         return [stuff, ...scrapedComments]
     }
@@ -112,10 +108,10 @@ export default class RedditScraper implements IScraper {
         return deletedOrRemovedContent
     }
 
-    private scrapeComments(commentList: any[], commentScrapeOpts: { maxCommentDepth: number}, level?: number): ReadableWebpageContent[] {
+    private scrapeComments(commentList: any[], config: AetheriumConfig, level?: number): ReadableWebpageContent[] {
         const safeLevel = level || 0
 
-        if (!Array.isArray(commentList) || commentList.length === 0 || safeLevel >= commentScrapeOpts.maxCommentDepth) {
+        if (!Array.isArray(commentList) || commentList.length === 0 || safeLevel >= config.scraper.reddit.maxCommentDepth) {
             return []
         }
 
@@ -130,9 +126,8 @@ export default class RedditScraper implements IScraper {
 
             const { data: comment } = dataObj 
             // todo: escape urls or any injection paths if body does not already do so
-            // todo: configurable max comment content
             // possible chunk similar to RAG max length to end of sentence chunking
-            let content = ((comment.body || '') as string).substring(0, 1000).trim()
+            let content = ((comment.body || '') as string).substring(0, config.scraper.reddit.commentMaxContent).trim()
 
             if (comment.score < 0) {
                 content = '(omitted - bad score)'
@@ -158,7 +153,7 @@ export default class RedditScraper implements IScraper {
             }
             
             const replies = this.unwrapRedditObj(comment.replies)
-            const children = this.scrapeComments(replies, { ...commentScrapeOpts }, safeLevel + 1)
+            const children = this.scrapeComments(replies, config, safeLevel + 1)
 
             // consider highest ranked only in each reply thread
             // also consider an aggregate scoring
@@ -166,7 +161,7 @@ export default class RedditScraper implements IScraper {
             rc.meta.replies = children
                 .sort((a, b) => b.meta.score - a.meta.score)
                 // the deeper we go, the fewer high-ranking comments we want
-                .slice(0, Math.max(commentScrapeOpts.maxCommentDepth - safeLevel, 1))
+                .slice(0, Math.max(config.scraper.reddit.maxCommentDepth - safeLevel, 1))
 
             comments.push(rc)
         }
@@ -201,7 +196,7 @@ Replies:
         return (rwc.meta.replies || []) as ReadableWebpageContent[]
     }
 
-    async buildResult(contents: ReadableWebpageContent[], scrapeOpts: ScrapeOptions): Promise<McpToolContent[]> {
+    async buildResult(contents: ReadableWebpageContent[]): Promise<McpToolContent[]> {
         const [redditData] = contents
         const comments = contents
             .slice(1)

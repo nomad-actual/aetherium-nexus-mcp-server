@@ -1,7 +1,7 @@
-import type { McpToolContent, ReadableWebpageContent, ScrapeOptions } from "../../types.ts";
+import type { AetheriumConfig, McpToolContent, ReadableWebpageContent } from "../../types.ts";
 
 export interface IScraper {
     shouldAttempt(url: string): boolean;
-    scrape(url: string, scrapeOpts: ScrapeOptions): Promise<any | null>;
-    buildResult(contents: ReadableWebpageContent[], scrapeOpts: ScrapeOptions): Promise<McpToolContent[]>;
+    scrape(url: string, config: AetheriumConfig, signal: AbortSignal): Promise<any | null>;
+    buildResult(contents: ReadableWebpageContent[]): Promise<McpToolContent[]>;
 }

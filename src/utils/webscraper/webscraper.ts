@@ -1,5 +1,5 @@
 import puppeteer from 'puppeteer'
-import type { McpToolContent, ScrapeOptions } from '../../types.ts';
+import type { AetheriumConfig, McpToolContent } from '../../types.ts';
 import logger from '../logger.ts';
 import BasicHtmlScraper from './BasicHtmlScraper.ts';
 import RedditScraper from './RedditScraper.ts';
@@ -65,17 +65,17 @@ function getScrapers(url: string) {
     ].filter((scraper) => scraper.shouldAttempt(url))
 }
 
-export async function doWebScrape(url: string, scrapeOpts: ScrapeOptions): Promise<McpToolContent[]> {
+export async function doWebScrape(url: string, config: AetheriumConfig, signal: AbortSignal): Promise<McpToolContent[]> {
     const scrapers = getScrapers(url)
 
     // todo - failure handling - retry logic
     for (const scraper of scrapers) {
-        const contents = await scraper.scrape(url, scrapeOpts)
+        const contents = await scraper.scrape(url, config, signal)
 
         if (Array.isArray(contents)) {
             logger.info(`Content found using scraper ${scraper.constructor.name}`)
 
-            const results = await scraper.buildResult(contents, scrapeOpts)
+            const results = await scraper.buildResult(contents)
 
             return results
         }

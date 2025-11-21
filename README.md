@@ -30,15 +30,16 @@ My collection of MCP tools
 - [x] abort signal passed in from tool call
 - [x] native TS on node
 - [x] reddit comment parsing (configurable levels deep and limit the total of 10 comments per thread)
+- [x] configurable reddit scraping
 
 ### In Progress
 
-- [ ] configurable reddit scraping
 - [ ] investigate prod package tracker not taking screenshots because browser process won't start
+- [ ] checkout browserless for better scraping?
 
 ### todo
 
-- [ ] OSINT research module
+- [ ] OSINT research module (phone, email, socials lookup)
 - [ ] youtube downloader (yt-dlp)
 - [ ] youtube transcription (yt-dlp -> ffmpeg 8.0+ or whisper)
 
@@ -46,6 +47,7 @@ My collection of MCP tools
 
 - [ ] RAG - finish up simple RAG + web search (need usability tests to determine usefulness)
 - [ ] RAG - indexer "cron?"
+- [ ] RAG - index websites on configurable interval
 - [ ] openai compat instead of ollama to prep from move off to (vllm, llama.cpp, or aphrodite)
 - [ ] OpenAPI for tools
 - [ ] How might a Researcher work?

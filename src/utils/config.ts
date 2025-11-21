@@ -12,6 +12,16 @@ function parseMonthStyle(monthStyle: string): UnitStyle {
     }
 }
 
+function toNum(envName: string, def: number) {
+    if (!envName) return def
+
+    const temp = parseInt(envName, 10)
+
+    if (temp === 0) return 0
+
+    return temp || def
+}
+
 let config: AetheriumConfig | null = null;
 
 export function getConfig(): AetheriumConfig {
@@ -93,6 +103,21 @@ export function getConfig(): AetheriumConfig {
             timeout: searchTimeout,
             contentLimit: searchContentLimit,
             maxResults: maxResults,
+        },
+        scraper: {
+            contentLimit: parseInt(process.env.SCRAPER_CONTENT_LIMIT || '', 10) || 1000,
+            timeout: parseInt(process.env.SCRAPER_REQUEST_TIMEOUT || '', 10) || 5_000,
+            basicHtmlReader: {
+                minScore: parseInt(process.env.SCRAPER_BASIC_MIN_SCORE || '', 10) || 20,
+                minReadableLength: parseInt(process.env.SCRAPER_BASIC_MIN_LENGTH || '', 10) || 140,
+            },
+            reddit: {
+                maxTopLevelComments: parseInt(process.env.SCRAPER_REDDIT_MAX_TOP_LEVEL_COMMENTS || '', 10) || 30,
+                commentMaxContent: parseInt(process.env.SCRAPER_REDDIT_MAX_COMMENT_LENGTH || '', 10) || 1000,
+                maxCommentDepth: parseInt(process.env.SCRAPER_REDDIT_MAX_COMMENT_THREAD_DEPTH || '', 10) || 6,
+                commentMaxPerThreadDepth: parseInt(process.env.SCRAPER_REDDIT_MAX_COMMENTS_PER_THREAD_DEPTH || '', 10) || 5,
+                ignoreComments: process.env.SCRAPER_REDDIT_IGNORE_COMMENTS === 'true',
+            }
         },
         locale: {
             region: localeRegion,
