@@ -1,7 +1,7 @@
 import { fetchWeatherApi } from 'openmeteo'
 import { closestMatch, findNearestCity, makeLocationString, searchLocation } from '../utils/location.ts'
 import z from 'zod'
-import { formatDate, formatDateTime, formatTemperature } from '../utils/formatter.ts'
+import { formatDate, formatTemperature } from '../utils/formatter.ts'
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.d.ts'
 import { WeatherApiResponse } from '@openmeteo/sdk/weather-api-response.js'
 import { getConfig } from '../utils/config.ts'
