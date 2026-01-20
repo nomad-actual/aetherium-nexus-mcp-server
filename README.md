@@ -31,14 +31,15 @@ My collection of MCP tools
 - [x] native TS on node
 - [x] reddit comment parsing (configurable levels deep and limit the total of 10 comments per thread)
 - [x] configurable reddit scraping
+- [x] investigate prod package tracker not taking screenshots because browser process won't start
 
 ### In Progress
 
-- [ ] investigate prod package tracker not taking screenshots because browser process won't start
-- [ ] checkout browserless for better scraping?
+- [ ] Fix puppeteer not starting in docker container [Likely](https://pptr.dev/troubleshooting#running-on-alpine)
 
 ### todo
 
+- [ ] checkout browserless for better scraping?
 - [ ] OSINT research module (phone, email, socials lookup)
 - [ ] youtube downloader (yt-dlp)
 - [ ] youtube transcription (yt-dlp -> ffmpeg 8.0+ or whisper)
