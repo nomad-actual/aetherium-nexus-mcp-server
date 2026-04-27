@@ -5,7 +5,7 @@ import o200k_base from "js-tiktoken/ranks/o200k_base";
 
 import { MarkdownTextSplitter } from "@langchain/textsplitters"
 import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
-import { OfficeParserConfig, parseOfficeAsync } from 'officeparser'
+import { parseOffice } from 'officeparser'
 
 // this is really just naive chunking
 import { chunkText } from "../../utils/text.chunker.ts";
@@ -59,15 +59,14 @@ export async function ingest(filePath: string): Promise<string[]> {
 
 async function ingestOfficeDoc(filePath:string): Promise<string[]> {
 
-    const options: OfficeParserConfig = {
+    const options = {
         ignoreNotes: false,
-        outputErrorToConsole: false, // I guess
-        preserveTempFiles: false,
-        putNotesAtLast: false, // maybe?
+        outputErrorToConsole: false,
+        putNotesAtLast: false,
     }
 
-    const parsedOfficeDoc = await parseOfficeAsync(filePath, options)
-    const chunks = chunkText(parsedOfficeDoc, {
+    const parsedOfficeDoc = await parseOffice(filePath, options)
+    const chunks = chunkText(parsedOfficeDoc.toText(), {
         chunkOverlap: chunkOverlap,
         chunkSize: chunkSize,
         method: 'paragraph'

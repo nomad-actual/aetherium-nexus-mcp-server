@@ -402,7 +402,7 @@ export function buildCurrentWeatherTool(): ToolsDef {
             description: 'Gets the current weather for a given location.',
             inputSchema: {
                 location: z.optional(
-                    z.string({ description: 'Location to search for current weather' })
+                    z.string().describe('Location to search for current weather')
                 )
             },
             annotations: {
@@ -427,7 +427,7 @@ export function buildForecastTool(): ToolsDef {
             description: 'Gets the weather forecast for a given location.',
             inputSchema: {
                 location: z.optional(
-                    z.string({ description: 'Location to search for weather forecast' })
+                    z.string().describe('Location to search for weather forecast')
                 )
             },
             annotations: {

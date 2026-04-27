@@ -3,7 +3,7 @@ import path from 'path';
 import { Ollama } from 'ollama'
 import { ingest } from './ingestor/ingestor.ts';
 import { getConfig } from '../utils/config.ts';
-import { AetheriumConfig } from '../types.ts';
+import type { AetheriumConfig } from '../types.ts';
 import { getRagDatastore } from './database/datastore.ts';
 
 // todo: move to some AI client module

@@ -85,7 +85,8 @@ export function buildPackageTrackingTool(): ToolsDef {
             description: 'Tracks the status of a package using tracking numbers',
             inputSchema: {
                 packages: z.array(
-                    z.string({ description: 'A tracking number' })
+                    z.string()
+                        .describe('A tracking number')
                         .trim()
                         .nonempty()
                     )

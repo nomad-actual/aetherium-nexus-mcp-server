@@ -14,6 +14,7 @@ export default class RedditScraper implements IScraper {
             return new Date(s).toISOString()
         } catch (e) {
             logger.warn({ message: "Error parsing date:", error: e, stuff })
+            return ''
         }
     }
 
@@ -170,8 +171,9 @@ export default class RedditScraper implements IScraper {
     }
 
 
-    private formatReply(reply: ReadableWebpageContent) {
-        const replies = this.getReplies(reply)
+    private formatReply(reply: ReadableWebpageContent): string {
+        const replies: ReadableWebpageContent[] = this.getReplies(reply)
+        const formattedReplies = replies
                 .map(r => this.formatReply(r))
                 .join('\n\n')
 
@@ -182,13 +184,13 @@ Published: ${reply.publishedTime}
 Score: ${reply.meta.score}
 Content: ${reply.content}`
         
-        if (!replies) {
+        if (!formattedReplies) {
             return basic
         }
         
         return `${basic}
 Replies:
-    ${replies}
+    ${formattedReplies}
 `
     }
 

@@ -19,7 +19,7 @@ async function abortWrapper<T>(fn: Promise<T>, signal: AbortSignal) {
 }
 
 export async function screenshotWebPage(url: string, screenshotOptions: ScreenShotOptions) {
-    let browser: puppeteer.Browser
+    let browser: puppeteer.Browser | undefined
     
     const { width, height, timeout, signal } = screenshotOptions;
 

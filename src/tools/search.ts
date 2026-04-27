@@ -74,32 +74,27 @@ export function buildSearchTool(): ToolsDef {
             description: 'Searches locally indexed documents for summarization',
             inputSchema: {
                 query: z
-                    .string({ description: 'The query that will be used' })
+                    .string()
+                    .describe('The query that will be used')
                     .trim()
                     .nonempty(),
                 useWebSearch: z
                     .optional(
-                        z.boolean({
-                            description: 'Include searching the Web',
-                            coerce: true
-                        })
-                        .default(false)
+                        z.coerce.boolean()
+                            .describe('Include searching the Web')
+                            .default(false)
                     ),
                 useRagSearch: z
                     .optional(
-                        z.boolean({
-                            description: 'Include searching the user\'s knowledgebase and information',
-                            coerce: true
-                        })
-                        .default(false)
+                        z.coerce.boolean()
+                            .describe('Include searching the user\'s knowledgebase and information')
+                            .default(false)
                     ),
                 semanticEvaluation: z
                     .optional(
-                        z.boolean({
-                            description: 'Whether to use semantic search for better RAG results',
-                            coerce: true,
-                        })
-                        .default(false)
+                        z.coerce.boolean()
+                            .describe('Whether to use semantic search for better RAG results')
+                            .default(false)
                     )
             },
             attributes: {

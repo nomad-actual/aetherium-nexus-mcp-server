@@ -70,7 +70,7 @@ export async function search(args: any, config: AetheriumConfig, signal: AbortSi
         signal
     }
 
-    const scrapePromises = filteredResults.map(result => doWebScrape(result.url, scrapeOpts))
+    const scrapePromises = filteredResults.map(result => doWebScrape(result.url, config, signal))
     const promisesResults = await Promise.allSettled(scrapePromises)
 
     const totalScrapeDuration = (((Date.now() - start) / 1000) - searchDuration).toFixed(2)
@@ -119,7 +119,8 @@ export function buildWebSearchTool(): ToolsDef {
             description: 'Searches the web and returns results for summarization',
             inputSchema: {
                 query: z
-                    .string({ description: 'The query that will be used to search against' })
+                    .string()
+                    .describe('The query that will be used to search against')
                     .trim()
                     .nonempty()
             },

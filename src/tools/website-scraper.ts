@@ -28,7 +28,8 @@ export function buildWebScraperTool(): ToolsDef {
                 'Scrapes the website content and returns the primary readable content, if any',
             inputSchema: {
                 url: z
-                    .string({ description: 'The url to scrape' })
+                    .string()
+                    .describe('The url to scrape')
                     .trim()
                     .url({ message: 'Enter a valid URL' })
                     .nonempty(),
