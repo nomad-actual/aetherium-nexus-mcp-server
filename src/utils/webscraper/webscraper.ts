@@ -1,9 +1,9 @@
 import puppeteer from 'puppeteer'
-import type { AetheriumConfig, McpToolContent } from '../../types.ts';
+import type { AetheriumConfig, McpToolContent, ReadableWebpageContent } from '../../types.ts';
 import logger from '../logger.ts';
 import BasicHtmlScraper from './BasicHtmlScraper.ts';
 import RedditScraper from './RedditScraper.ts';
-import { abort } from '../promises.ts';
+import { abort, abortTimeout } from '../promises.ts';
 
 type ScreenShotOptions = {
     width: number;
@@ -22,7 +22,8 @@ export async function screenshotWebPage(url: string, screenshotOptions: ScreenSh
     let browser: puppeteer.Browser | undefined
     
     const { width, height, timeout, signal } = screenshotOptions;
-
+    const effectiveTimeout = timeout || 30_000;
+    
     try {
         browser = await abortWrapper(puppeteer.launch(), signal)
         const page = await abortWrapper(browser.newPage(), signal)
@@ -31,19 +32,16 @@ export async function screenshotWebPage(url: string, screenshotOptions: ScreenSh
         // get around bot detection
         await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.109 Safari/537.36');
         
-        await page.goto(url, { waitUntil: 'networkidle0', timeout, signal })
+        await page.goto(url, { waitUntil: 'networkidle0', timeout: effectiveTimeout })
         await abortWrapper(page.content(), signal)
 
         const data = await abortWrapper(
             page.screenshot({
-                type: screenshotOptions.format || 'png',
-                quality: screenshotOptions.quality || 70, // really only applies to jpgs
-                optimizeForSpeed: true,
-                captureBeyondViewport: true,
-                encoding: 'base64',
+                type: screenshotOptions.format || 'png'
             }),
             signal
         )
+
 
         await browser.close();
 
@@ -51,8 +49,7 @@ export async function screenshotWebPage(url: string, screenshotOptions: ScreenSh
     } catch (error) {
         logger.error({ msg: 'Error taking screenshot', error })
         throw error;
-    }
-    finally {
+    } finally {
         if (browser) await browser.close()
     }
 }
@@ -68,18 +65,31 @@ function getScrapers(url: string) {
 export async function doWebScrape(url: string, config: AetheriumConfig, signal: AbortSignal): Promise<McpToolContent[]> {
     const scrapers = getScrapers(url)
 
-    // todo - failure handling - retry logic
+    const startTime = Date.now();
+
     for (const scraper of scrapers) {
-        const contents = await scraper.scrape(url, config, signal)
+        logger.debug(`[Scraper] Attempting ${scraper.constructor.name} on ${url}`)
 
-        if (Array.isArray(contents)) {
-            logger.info(`Content found using scraper ${scraper.constructor.name}`)
+        try {
+            const contents = await abortTimeout<ReadableWebpageContent[] | null>(
+                scraper.scrape(url, config, signal),
+                config.scraper.timeout,
+                `${scraper.constructor.name} on ${url}`,
+            )
 
-            const results = await scraper.buildResult(contents)
+            if (contents && Array.isArray(contents) && contents.length > 0) {
+                const duration = ((Date.now() - startTime) / 1000).toFixed(2)
+                logger.info(`Content found using scraper ${scraper.constructor.name} (${duration}s)`)
 
-            return results
+                const results = await scraper.buildResult(contents)
+                return results
+            }
+
+            logger.debug(`[Scraper] ${scraper.constructor.name} returned null/empty on ${url}, trying next...`)
+        } catch (err) {
+            const message = err instanceof Error ? err.message : String(err)
+            logger.warn(`[Scraper] ${scraper.constructor.name} failed on ${url}: ${message}, trying next...`)
         }
-
     }
 
     logger.warn(`No content found on webpage ${url}`)
