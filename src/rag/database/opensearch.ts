@@ -96,19 +96,19 @@ export class OpenSearchRagDatastore implements RagDataStore {
             },
         })
 
-        return results.body.hits.hits.map((hit) => {
-            const openSearchResult = hit._source
+        return results.body.hits.hits.map((hit: { _source?: Record<string, unknown>; _score?: number }) => {
+            const openSearchResult = hit._source as Record<string, string> | undefined
             const cosineSimilarityScore = Number(hit._score) || 0
 
             return {
-                content: hit._source?.content as string,
+                content: openSearchResult?.content as string,
                 metadata: {
                     uri: openSearchResult?.uri as string,
                     cosineSimilarityScore,
                     // we don't need to return this...it shouldn't be a part of the results
                     vector: [],
                     bm25Score: 0,
-                    embeddingId: hit._source?.embeddingId as string,
+                    embeddingId: openSearchResult?.embeddingId as string,
                     semanticScore: 0
                 }
             }

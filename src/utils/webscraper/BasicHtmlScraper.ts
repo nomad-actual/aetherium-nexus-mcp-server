@@ -4,6 +4,11 @@ import { Readability } from '@mozilla/readability'
 import { capitalizeFirstLetter } from '../formatter.ts'
 import logger from '../logger.ts'
 import { JSDOM, VirtualConsole } from 'jsdom'
+
+// jsdom v29+ no longer exports NodeFilter directly; use the numeric constants
+const SHOW_ELEMENT = 1
+const FILTER_ACCEPT = 1
+const FILTER_REJECT = 2
 import { abort } from '../promises.ts'
 import { fetch as undiciFetch } from 'undici'
 
@@ -172,26 +177,26 @@ const UNNECESSARY_IDS = [
 ]
 
 function trimInPlace(doc: Document): void {
-    const walker = doc.createTreeWalker(doc.body || doc.documentElement, NodeFilter.SHOW_ELEMENT, {
+    const walker = doc.createTreeWalker(doc.body || doc.documentElement, SHOW_ELEMENT, {
         acceptNode(node) {
             const el = node as Element
             const tag = el.tagName.toLowerCase()
 
-            if (UNNECESSARY_ELEMENTS.has(tag)) return NodeFilter.FILTER_REJECT
+            if (UNNECESSARY_ELEMENTS.has(tag)) return FILTER_REJECT
 
             if (el.className) {
                 for (const pattern of UNNECESSARY_CLASSES) {
-                    if (pattern.test(el.className)) return NodeFilter.FILTER_REJECT
+                    if (pattern.test(el.className)) return FILTER_REJECT
                 }
             }
 
             if (el.id) {
                 for (const pattern of UNNECESSARY_IDS) {
-                    if (pattern.test(el.id)) return NodeFilter.FILTER_REJECT
+                    if (pattern.test(el.id)) return FILTER_REJECT
                 }
             }
 
-            return NodeFilter.FILTER_ACCEPT
+            return FILTER_ACCEPT
         },
     })
 

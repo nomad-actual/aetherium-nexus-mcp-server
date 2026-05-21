@@ -1,4 +1,4 @@
-import puppeteer from 'puppeteer'
+import * as puppeteer from 'puppeteer';
 import type { AetheriumConfig, McpToolContent, ReadableWebpageContent } from '../../types.ts';
 import logger from '../logger.ts';
 import BasicHtmlScraper from './BasicHtmlScraper.ts';

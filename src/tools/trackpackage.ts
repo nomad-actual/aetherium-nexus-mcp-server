@@ -55,15 +55,17 @@ async function trackPakages(args: { packages: string[] }, config: AetheriumConfi
         }
 
         results.push({ type: 'text', text: JSON.stringify(trackingContent) })
-        results.push({
-            type: 'image',
-            data: screenshot, // base64 encoded image data
-            mimeType: 'image/png', // todo: config + function to convert
-            annotations: {
-                'audience': ['user'],
-                'priority': 0.9,
-            }
-        })
+        if (screenshot && Buffer.isBuffer(screenshot)) {
+            results.push({
+                type: 'image',
+                data: screenshot.toString('base64'),
+                mimeType: 'image/png',
+                annotations: {
+                    'audience': ['user'],
+                    'priority': 0.9,
+                }
+            })
+        }
     }
 
     return {

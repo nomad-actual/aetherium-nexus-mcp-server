@@ -168,8 +168,8 @@ function buildDaily(daily: any, utcOffsetSeconds: number): ForecastDay[] {
 async function fetchWeather(weatherQuery: WeatherQuery, signal: AbortSignal): Promise<WeatherApiResponse>{
     const url = 'https://api.open-meteo.com/v1/forecast'
 
-    const speedUnit = weatherQuery.units === 'metric' ? 'kph' : 'mph'
-    const precipitationUnit = weatherQuery.units === 'metric' ? 'centimeter' : 'inch'
+    const speedUnit = weatherQuery.units === 'metric' ? 'kmh' : 'mph'
+    const precipitationUnit = weatherQuery.units === 'metric' ? 'mm' : 'inch'
     const temperatureUnit = weatherQuery.units === 'metric' ? 'celsius' : 'fahrenheit'
 
     const params: any = {
