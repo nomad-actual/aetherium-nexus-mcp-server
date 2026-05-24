@@ -1,0 +1,366 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "aetherium-nexus",
+    "version": "1.0.0",
+    "description": "Aetherium Nexus MCP Server — exposes MCP tools via Streamable HTTP transport."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Local development server"
+    }
+  ],
+  "paths": {
+    "/mcp": {
+      "post": {
+        "summary": "MCP Tool Call",
+        "description": "Call an MCP tool via Streamable HTTP transport using JSON-RPC 2.0. All 6 tools are invoked through this single endpoint.",
+        "operationId": "callMcpTool",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "jsonrpc": {
+                    "type": "string",
+                    "enum": ["2.0"],
+                    "description": "JSON-RPC protocol version"
+                  },
+                  "id": {
+                    "type": "integer",
+                    "description": "Request identifier"
+                  },
+                  "method": {
+                    "type": "string",
+                    "enum": ["tools/call"],
+                    "description": "MCP method for calling tools"
+                  },
+                  "params": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "enum": ["fetch-current-weather", "fetch-weather-forecast", "fetch-current-time", "web-search", "track-package", "scrape-website"],
+                        "description": "Tool name to call"
+                      },
+                      "arguments": {
+                        "type": "object",
+                        "description": "Tool-specific input arguments"
+                      }
+                    },
+                    "required": ["name", "arguments"]
+                  }
+                },
+                "required": ["jsonrpc", "id", "method", "params"]
+              },
+              "examples": {
+                "fetch-current-weather": {
+                  "value": {
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "method": "tools/call",
+                    "params": {
+                      "name": "fetch-current-weather",
+                      "arguments": {
+                        "location": "New York"
+                      }
+                    }
+                  }
+                },
+                "fetch-weather-forecast": {
+                  "value": {
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "method": "tools/call",
+                    "params": {
+                      "name": "fetch-weather-forecast",
+                      "arguments": {
+                        "location": "London"
+                      }
+                    }
+                  }
+                },
+                "fetch-current-time": {
+                  "value": {
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "method": "tools/call",
+                    "params": {
+                      "name": "fetch-current-time",
+                      "arguments": {}
+                    }
+                  }
+                },
+                "web-search": {
+                  "value": {
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "method": "tools/call",
+                    "params": {
+                      "name": "web-search",
+                      "arguments": {
+                        "query": "latest AI news"
+                      }
+                    }
+                  }
+                },
+                "track-package": {
+                  "value": {
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "method": "tools/call",
+                    "params": {
+                      "name": "track-package",
+                      "arguments": {
+                        "packages": ["1Z999AA10123456784"]
+                      }
+                    }
+                  }
+                },
+                "scrape-website": {
+                  "value": {
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "method": "tools/call",
+                    "params": {
+                      "name": "scrape-website",
+                      "arguments": {
+                        "url": "https://example.com/article"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful tool execution",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "jsonrpc": {
+                      "type": "string",
+                      "enum": ["2.0"]
+                    },
+                    "id": {
+                      "type": "integer"
+                    },
+                    "result": {
+                      "$ref": "#/components/schemas/CallToolResult"
+                    }
+                  },
+                  "required": ["jsonrpc", "id", "result"]
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method not allowed — only POST is accepted on /mcp"
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Not allowed",
+        "description": "GET requests to /mcp are not supported and return 405 Method Not Allowed.",
+        "responses": {
+          "405": {
+            "description": "Method not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Not allowed",
+        "description": "DELETE requests to /mcp are not supported and return 405 Method Not Allowed.",
+        "responses": {
+          "405": {
+            "description": "Method not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CallToolResult": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ContentItem"
+            }
+          }
+        },
+        "required": ["content"]
+      },
+      "ContentItem": {
+        "oneOf": [
+          {
+            "type": "object",
+            "description": "Text content",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["text"]
+              },
+              "text": {
+                "type": "string",
+                "description": "The text content"
+              }
+            },
+            "required": ["type", "text"]
+          },
+          {
+            "type": "object",
+            "description": "Image content (returned by track-package)",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["image"]
+              },
+              "data": {
+                "type": "string",
+                "description": "Base64-encoded image data"
+              },
+              "mimeType": {
+                "type": "string",
+                "description": "MIME type of the image",
+                "enum": ["image/png"]
+              },
+              "annotations": {
+                "type": "object",
+                "properties": {
+                  "audience": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "priority": {
+                    "type": "number"
+                  }
+                }
+              }
+            },
+            "required": ["type", "data", "mimeType"]
+          }
+        ]
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "jsonrpc": {
+            "type": "string",
+            "enum": ["2.0"]
+          },
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "integer"
+              },
+              "message": {
+                "type": "string"
+              }
+            },
+            "required": ["code", "message"]
+          },
+          "id": {
+            "type": ["integer", "null"]
+          }
+        },
+        "required": ["jsonrpc", "error", "id"]
+      },
+      "FetchCurrentWeatherInput": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "type": "string",
+            "description": "Location to search for current weather"
+          }
+        }
+      },
+      "FetchWeatherForecastInput": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "type": "string",
+            "description": "Location to search for weather forecast"
+          }
+        }
+      },
+      "FetchCurrentTimeInput": {
+        "type": "object",
+        "properties": {}
+      },
+      "WebSearchInput": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "The query to search against",
+            "minLength": 1
+          }
+        },
+        "required": ["query"]
+      },
+      "TrackPackageInput": {
+        "type": "object",
+        "properties": {
+          "packages": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "A tracking number"
+            },
+            "minItems": 1,
+            "maxItems": 20,
+            "description": "Array of tracking numbers"
+          }
+        },
+        "required": ["packages"]
+      },
+      "ScrapeWebsiteInput": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "The URL to scrape",
+            "minLength": 1
+          }
+        },
+        "required": ["url"]
+      }
+    }
+  }
+}
