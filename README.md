@@ -162,6 +162,8 @@ No test framework is configured.
 
 GitHub Actions publishes a Docker image to GHCR on push to `main`, on semver tags, and on a daily schedule. Images are signed with cosign.
 
+Semantic releases are created automatically when a PR is merged into `main`. The version bump comes from the PR title prefix (`major:`, `fix:`/`hotfix:`, anything else), or from the branch prefix (`major/`, `fix/`/`hotfix/`, anything else) when the title has no prefix. See `docs/AGENTS.md` for details.
+
 ## License
 
 ISC
