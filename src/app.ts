@@ -103,6 +103,10 @@ app.delete('/mcp', async (req: Request, res: Response) => {
     )
 })
 
+app.get('/health', (req: Request, res: Response) => {
+    res.status(200).json({ status: 'ok', uptime: process.uptime() })
+})
+
 const { port, host } = config.mcpServer
 
 app.listen({ port, host }, (error: Error | undefined) => {
