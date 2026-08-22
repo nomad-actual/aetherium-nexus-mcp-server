@@ -26,15 +26,27 @@ jobs:
       - name: Determine version bump
         id: version
         env:
+          TITLE: ${{ github.event.pull_request.title }}
           BRANCH: ${{ github.event.pull_request.head_ref }}
         run: |
-          case "$BRANCH" in
+          # 1. PR title prefix (conventional-commit style, e.g. "fix: ...")
+          # 2. Branch prefix (e.g. "fix/...") — colons are invalid in branch names
+          # 3. Fall through to minor
+          BUMP=""
+          case "$TITLE" in
             major:*) BUMP=major ;;
             fix:*|hotfix:*) BUMP=patch ;;
-            *) BUMP=minor ;;
+            *:*) BUMP=minor ;;
           esac
+          if [ -z "$BUMP" ]; then
+            case "$BRANCH" in
+              major/*) BUMP=major ;;
+              fix/*|hotfix/*) BUMP=patch ;;
+              *) BUMP=minor ;;
+            esac
+          fi
           echo "bump=$BUMP" >> "$GITHUB_OUTPUT"
-          echo "Bump: $BUMP (from branch: $BRANCH)"
+          echo "Bump: $BUMP (title: $TITLE, branch: $BRANCH)"
 
       - name: Create release
         env:
