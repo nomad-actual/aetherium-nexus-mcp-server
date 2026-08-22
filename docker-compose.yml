@@ -1,17 +1,11 @@
-version: '3.8'
-
 services:
   mcp-server:
-    build:
-      context: ./
-      dockerfile: Dockerfile
+    image: ghcr.io/nomad-actual/aetherium-nexus-mcp-server:latest
+    container_name: aetherium-nexus-mcp
     env_file:
       - .env
+    environment:
+      MCP_SERVER_HOST: 0.0.0.0
     ports:
       - "3000:3000"
-    networks:
-      - mcp-network
-
-networks:
-  mcp-network:
-    driver: bridge
+    restart: unless-stopped
