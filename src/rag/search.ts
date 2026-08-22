@@ -1,16 +1,17 @@
-import { Ollama } from 'ollama'
 import type { AetheriumConfig, RagSearchResult } from '../types.ts'
 import { getConfig } from '../utils/config.ts';
 import { formatDuration } from '../utils/formatter.ts';
 import { getRagDatastore } from './database/datastore.ts';
-
-const ollamaClient = new Ollama({ host: getConfig().llmClient.host  })
+import { getEmbeddingProvider } from './embeddings/factory.ts';
+import { getChatProvider } from './chat/factory.ts';
 
 
 async function makeSemanticRankingCall(userQuery: string, chunk: string, config: AetheriumConfig) {
-    if (!config.llmClient.semanticSearchModelContext) {
+    if (!config.llmClient.semanticSearchModel) {
         throw new Error('No Semantic Model Set - update config with a model')
     }
+
+    const chatProvider = getChatProvider(config)
 
     const semanticQuery =
 `You are an expert relevance grader. Your task is to evaluate if the 
@@ -22,27 +23,13 @@ Document: ${chunk}
 `
 
     // Returns a score of 1.0 for 'Yes' and 0.0 for 'No'.
-    const response = await ollamaClient.chat({
-        model: config.llmClient.semanticSearchModel,
-        messages: [{ role: 'user', content: semanticQuery }],
-        stream: false,
-        format: {
-            "type": "object",
-            "properties": {
-                "answer": { "type": "string" },
-            },
-            "required": [
-                "answer",
-            ]
-        },
-        options: {
-            num_ctx: config.llmClient.semanticSearchModelContext,
-            temperature: 0 // for deterministic results
-        }
-    })
+    const response = await chatProvider.chat(
+        [{ role: 'user', content: semanticQuery }],
+        config.llmClient.semanticSearchModel,
+    )
 
     try {
-        const answer = response.message.content.trim()
+        const answer = response.content.trim()
         const parsedAnswer = JSON.parse(answer).answer.toLowerCase()
 
         return parsedAnswer === 'yes' ? 1 : 0
@@ -53,22 +40,16 @@ Document: ${chunk}
 }
 
 async function makeEmbedding(userQuery: string, config: AetheriumConfig): Promise<number[][]> {
+    const embeddingProvider = getEmbeddingProvider(config)
     const ollamaSearchInstruction = 
         `Instruct: Given a user search request, retrieve relevant passages that answer the query.\nQuery: ${userQuery}`
 
     // note: error on something larger than context size (other option is to truncate)
     // optionally we should break up the query if needed but this is fine for now
-    const searchEmbedding = await ollamaClient.embed({
-        model: config.llmClient.embeddingModel,
-        input: ollamaSearchInstruction,
-        truncate: false,
-        options: {
-            num_ctx: config.llmClient.embeddingModelContext,
-        },
-    })
+    const searchEmbedding = await embeddingProvider.embed(ollamaSearchInstruction)
 
     // log stats I guess
-    return searchEmbedding.embeddings;
+    return searchEmbedding;
 }
 
 async function doSemanticSearch(query: string, config: AetheriumConfig, ragResults: RagSearchResult[]): Promise<RagSearchResult[]> {

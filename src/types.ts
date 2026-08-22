@@ -101,8 +101,15 @@ export type RagIndexingOpts = {
 export type LlmClientOptions = {
     type: string
     host: string
+    embeddingProvider: 'openai' | 'ollama'
     embeddingModel: string
     embeddingModelContext: number
+    openaiApiKey: string
+    openaiEmbeddingModel: string
+    openaiBasePath?: string
+    openaiDimensions?: number
+    openaiEncodingFormat: 'float' | 'base64'
+    semanticSearchProvider: 'openai' | 'ollama'
     semanticSearchModel: string
     semanticSearchModelContext: number
 }

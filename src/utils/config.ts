@@ -58,8 +58,15 @@ export function getConfig(): AetheriumConfig {
     const llmClient = {
         type: 'ollama',
         host: process.env.LLM_HOST || 'localhost',
+        embeddingProvider: (process.env.EMBEDDING_PROVIDER as 'openai' | 'ollama') || 'openai',
         embeddingModel: process.env.EMBEDDING_MODEL || '',
         embeddingModelContext: parseInt(process.env.EMBEDDING_MODEL_CONTEXT || '', 10) || 512,
+        openaiApiKey: process.env.OPENAI_API_KEY || '',
+        openaiEmbeddingModel: process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-small',
+        openaiBasePath: process.env.OPENAI_BASE_PATH || undefined,
+        openaiDimensions: parseInt(process.env.OPENAI_DIMENSIONS || '', 10) || 0,
+        openaiEncodingFormat: (process.env.OPENAI_ENCODING_FORMAT as 'float' | 'base64') || 'float',
+        semanticSearchProvider: (process.env.SEMANTIC_SEARCH_PROVIDER as 'openai' | 'ollama') || 'openai',
         semanticSearchModel: process.env.SEMANTIC_SEARCH_MODEL || '',
         semanticSearchModelContext: parseInt(process.env.SEMANTIC_SEARCH_MODEL_CONTEXT || '', 10) || 512,
     }
