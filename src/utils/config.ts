@@ -34,7 +34,7 @@ export function getConfig(): AetheriumConfig {
     const mcpServerCorsCorsAllowedOrigins = process.env.MCP_SERVER_CORS_ALLOWED_ORIGINS ? process.env.MCP_SERVER_CORS_ALLOWED_ORIGINS.split('|') : [];
     const mcpServerCorsCorsAllowedHosts = process.env.MCP_SERVER_CORS_ALLOWED_HOSTS ? process.env.MCP_SERVER_CORS_ALLOWED_HOSTS.split('|') : [];
     const mcpServerTitle = process.env.MCP_SERVER_TITLE || 'Default MCP server';
-    const toolCallTimeout = parseInt(process.env.TOOL_CALL_TIMEOUT || '', 10) || 10_000;
+    const toolCallTimeout = parseInt(process.env.TOOL_CALL_TIMEOUT || '', 10) || 30_000;
 
     const lat = parseFloat(process.env.DEFAULT_LOCATION_LAT || '') || 34.052235;
     const lon = parseFloat(process.env.DEFAULT_LOCATION_LON || '') || -118.243683;
@@ -105,8 +105,8 @@ export function getConfig(): AetheriumConfig {
             maxResults: maxResults,
         },
         scraper: {
-            contentLimit: parseInt(process.env.SCRAPER_CONTENT_LIMIT || '', 10) || 1000,
-            timeout: parseInt(process.env.SCRAPER_REQUEST_TIMEOUT || '', 10) || 5_000,
+            contentLimit: parseInt(process.env.SCRAPER_CONTENT_LIMIT || '', 10) || 100_000,
+            timeout: parseInt(process.env.SCRAPER_REQUEST_TIMEOUT || '', 10) || 15_000,
             crw: {
                 host: process.env.SCRAPER_CRW_HOST || '',
                 apiKey: process.env.SCRAPER_CRW_API_KEY || '',

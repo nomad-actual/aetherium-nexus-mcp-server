@@ -46,7 +46,20 @@ export default class BasicHtmlScraper implements IScraper {
 
         const virtualConsole = new VirtualConsole({ captureRejections: true })
         virtualConsole.on('error', (err) => logger.error({ message: 'JSDOM CSS error (non-fatal)', err }))
-        virtualConsole.on('jsdomError', (err) => logger.error({ message: 'JSDOM parse error (non-fatal)', err }))
+        virtualConsole.on('jsdomError', (err) => {
+            const jsdomErr = err as Error & { type?: string; sheetText?: string }
+            if (jsdomErr.type === 'css-parsing') {
+                const cause = jsdomErr.cause instanceof Error ? jsdomErr.cause.message : String(jsdomErr.cause ?? '')
+                logger.warn({
+                    message: `JSDOM CSS parse error (non-fatal) for ${url}`,
+                    detail: cause,
+                    sheetLength: typeof jsdomErr.sheetText === 'string' ? jsdomErr.sheetText.length : undefined,
+                })
+                return
+            }
+
+            logger.error({ message: 'JSDOM parse error (non-fatal)', err })
+        })
 
         const resources = buildJsdomResources(url, Math.min(config.scraper.timeout, DEFAULT_TIMEOUT))
 

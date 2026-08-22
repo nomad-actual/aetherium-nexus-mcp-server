@@ -12,7 +12,10 @@ type CrwScrapeResponse = {
             title?: string
             description?: string
             sourceURL?: string
+            language?: string
+            publishedTime?: string
             statusCode?: number
+            renderedWith?: string
             elapsedMs?: number
         }
         warnings?: string[]
@@ -104,10 +107,10 @@ export default class CrwScraper implements IScraper {
         return [{
             url,
             title: metadata.title || '',
-            lang: '',
+            lang: metadata.language || '',
             content,
             siteName: altSiteName,
-            publishedTime: 'Published Date not found',
+            publishedTime: metadata.publishedTime || 'Published Date not found',
             scrapeDuration: totalDuration,
             meta: {
                 description: metadata.description || '',
