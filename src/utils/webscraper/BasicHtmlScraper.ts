@@ -177,22 +177,33 @@ const UNNECESSARY_IDS = [
 ]
 
 function trimInPlace(doc: Document): void {
+    const toRemove: Element[] = []
+
     const walker = doc.createTreeWalker(doc.body || doc.documentElement, SHOW_ELEMENT, {
         acceptNode(node) {
             const el = node as Element
             const tag = el.tagName.toLowerCase()
 
-            if (UNNECESSARY_ELEMENTS.has(tag)) return FILTER_REJECT
+            if (UNNECESSARY_ELEMENTS.has(tag)) {
+                toRemove.push(el)
+                return FILTER_REJECT
+            }
 
             if (el.className) {
                 for (const pattern of UNNECESSARY_CLASSES) {
-                    if (pattern.test(el.className)) return FILTER_REJECT
+                    if (pattern.test(el.className)) {
+                        toRemove.push(el)
+                        return FILTER_REJECT
+                    }
                 }
             }
 
             if (el.id) {
                 for (const pattern of UNNECESSARY_IDS) {
-                    if (pattern.test(el.id)) return FILTER_REJECT
+                    if (pattern.test(el.id)) {
+                        toRemove.push(el)
+                        return FILTER_REJECT
+                    }
                 }
             }
 
@@ -200,10 +211,8 @@ function trimInPlace(doc: Document): void {
         },
     })
 
-    const toRemove: Element[] = []
     let node = walker.nextNode() as Element | null
     while (node) {
-        toRemove.push(node)
         node = walker.nextNode() as Element | null
     }
 

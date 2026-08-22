@@ -2,7 +2,7 @@ import * as puppeteer from 'puppeteer';
 import type { AetheriumConfig, McpToolContent, ReadableWebpageContent } from '../../types.ts';
 import logger from '../logger.ts';
 import BasicHtmlScraper from './BasicHtmlScraper.ts';
-import RedditScraper from './RedditScraper.ts';
+import CrwScraper from './CrwScraper.ts';
 import { abort, abortTimeout } from '../promises.ts';
 
 type ScreenShotOptions = {
@@ -57,7 +57,7 @@ export async function screenshotWebPage(url: string, screenshotOptions: ScreenSh
 
 function getScrapers(url: string) {
     return [
-        new RedditScraper(),
+        new CrwScraper(),
         new BasicHtmlScraper()
     ].filter((scraper) => scraper.shouldAttempt(url))
 }
