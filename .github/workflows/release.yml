@@ -29,9 +29,9 @@ jobs:
           BRANCH: ${{ github.event.pull_request.head_ref }}
         run: |
           case "$BRANCH" in
-            major*) BUMP=major ;;
-            feat*|feature*) BUMP=minor ;;
-            *) BUMP=patch ;;
+            major:*) BUMP=major ;;
+            fix:*|hotfix:*) BUMP=patch ;;
+            *) BUMP=minor ;;
           esac
           echo "bump=$BUMP" >> "$GITHUB_OUTPUT"
           echo "Bump: $BUMP (from branch: $BRANCH)"
