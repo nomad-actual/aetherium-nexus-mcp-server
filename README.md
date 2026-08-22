@@ -5,6 +5,7 @@ MCP server built on Node.js that exposes a set of tools to AI clients via Stream
 ## Features
 
 - **6 MCP tools** — weather, time, web search, package tracking, web scraping
+- **Scraping chain** — CRW (Firecrawl-compatible) scraper as primary, local readability-based HTML scraping as fallback
 - **Streamable HTTP transport** — stateless JSON-RPC 2.0 on `POST /mcp`
 - **RAG pipeline** — index local files into embeddings (JSON file or OpenSearch) with similarity search
 - **Native TypeScript** — runs `.ts` files directly via `node --experimental-strip-types` (no build step)
@@ -42,6 +43,9 @@ src/
     ├── promises.ts             # Promise utility helpers
     ├── text.chunker.ts         # Text splitting for RAG
     └── webscraper/             # Web scraping orchestrator
+        ├── CrwScraper.ts       # CRW (Firecrawl-compatible) API client, primary scraper
+        ├── BasicHtmlScraper.ts # Local readability-based fallback scraper
+        └── IScraper.ts         # Scraper interface
 ```
 
 ### Key design decisions
@@ -60,7 +64,7 @@ src/
 | `fetch-current-time` | NTP-synced time |
 | `web-search` | Web search via SearXNG with content scraping |
 | `track-package` | Package tracking with courier info and screenshots |
-| `scrape-website` | Extract readable content from any URL |
+| `scrape-website` | Extract readable content from any URL (CRW primary, local HTML fallback) |
 
 See `docs/api.md` for full API documentation with input parameters and example JSON-RPC payloads.
 
@@ -72,6 +76,7 @@ See `docs/api.md` for full API documentation with input parameters and example J
 - **.env file** (copy from `.env.example`)
 - **Ollama** (for RAG embeddings, optional)
 - **SearXNG instance** (for web search, optional)
+- **CRW instance** (Firecrawl-compatible scraper, optional — falls back to local HTML scraping when `SCRAPER_CRW_HOST` is unset)
 
 ### Installation
 
@@ -108,11 +113,12 @@ All configuration comes from environment variables. Copy `.env.example` to `.env
 
 | Group | Variables | Description |
 |-------|-----------|-------------|
-| **MCP Server** | `MCP_SERVER_PORT`, `MCP_SERVER_HOST`, `MCP_SERVER_TITLE`, `MCP_SERVER_CORS_*` | Server listen address, CORS, title |
+| **MCP Server** | `MCP_SERVER_PORT`, `MCP_SERVER_HOST`, `MCP_SERVER_TITLE`, `MCP_SERVER_CORS_*`, `TOOL_CALL_TIMEOUT` | Server listen address, CORS, title, tool call timeout |
 | **Location** | `DEFAULT_LOCATION_LAT`, `DEFAULT_LOCATION_LON` | Default lat/lon for weather fallback |
 | **NTP** | `TIMESERVER_HOST`, `TIMESERVER_PORT`, `TIMESERVER_TIMEOUT` | NTP time server settings |
-| **Locale** | `LOCALE_REGION`, `LOCALE_UNITS`, `LOCALE_MONTH_STYLE`, `LOCALE_SHOWWEEKDAY`, `LOCALE_USE_24HR` | Date/time formatting and units |
+| **Locale** | `LOCALE_REGION`, `LOCALE_UNITS`, `LOCALE_MONTH`, `LOCALE_SHOWWEEKDAY`, `IS_24_HOUR_TIME` | Date/time formatting and units |
 | **Search** | `SEARCH_HOST`, `SEARCH_TIMEOUT`, `SEARCH_MAX_RESULTS`, `SEARCH_PAGE_CONTENT_LIMIT` | SearXNG instance settings |
+| **Scraper** | `SCRAPER_CONTENT_LIMIT`, `SCRAPER_REQUEST_TIMEOUT`, `SCRAPER_CRW_HOST`, `SCRAPER_CRW_API_KEY`, `SCRAPER_CRW_RENDER_JS`, `SCRAPER_CRW_ONLY_MAIN_CONTENT`, `SCRAPER_BASIC_MIN_SCORE`, `SCRAPER_BASIC_MIN_LENGTH` | Content limits, timeouts, CRW (Firecrawl-compatible) host/key/render options, readability thresholds |
 | **RAG** | `RAG_DATASTORE`, `RAG_STORAGE_URI`, `RAG_SOURCE_DIRECTORIES`, `RAG_INCLUDE_FILE_EXT`, `RAG_LIMIT_RESULTS`, `RAG_IGNORE_DIRS`, `RAG_MAX_FILE_SIZE_MB` | Datastore type, paths, file filters |
 | **LLM** | `LLM_HOST`, `EMBEDDING_MODEL`, `EMBEDDING_MODEL_CONTEXT`, `SEMANTIC_SEARCH_ENABLED`, `SEMANTIC_SEARCH_MODEL` | Ollama host, embedding model, semantic search |
 
