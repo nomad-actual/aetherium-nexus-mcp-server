@@ -7,5 +7,5 @@ services:
     environment:
       MCP_SERVER_HOST: 0.0.0.0
     ports:
-      - "3000:3000"
+      - "3030:3000"
     restart: unless-stopped
