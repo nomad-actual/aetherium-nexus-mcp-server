@@ -17,7 +17,7 @@ src/
 │   ├── time.ts           # fetch-current-time
 │   ├── websearch.ts      # web-search (via SearXNG)
 │   ├── trackpackage.ts   # track-package
-│   ├── website-scraper.ts# scrape-website (with Reddit support)
+│   ├── website-scraper.ts# scrape-website (CRW primary, basic HTML fallback)
 │   └── search.ts         # search — WIP, NOT registered (see "Available MCP Tools")
 ├── rag/                  # RAG pipeline: ingest, embed (via Ollama), and search
 │   ├── indexer.ts        # CLI entry point for building embeddings
@@ -40,7 +40,7 @@ src/
     └── webscraper/
         ├── webscraper.ts # Orchestrator (routes to the right scraper)
         ├── BasicHtmlScraper.ts
-        ├── RedditScraper.ts
+        ├── CrwScraper.ts # Firecrawl-compatible CRW API client (primary web scraper)
         └── IScraper.ts   # Scraper interface
 ```
 
@@ -65,7 +65,7 @@ Registered in `src/server/mcp.server.ts`:
 | `fetch-current-time` | `src/tools/time.ts` | NTP-synced time query |
 | `web-search` | `src/tools/websearch.ts` | Web search via SearXNG |
 | `track-package` | `src/tools/trackpackage.ts` | Package delivery tracking |
-| `scrape-website` | `src/tools/website-scraper.ts` | Scrape and summarize web pages (with Reddit support) |
+| `scrape-website` | `src/tools/website-scraper.ts` | Scrape web pages (primary CRW/Firecrawl-compatible scraper, basic HTML fallback) |
 
 **Not registered (WIP):** `src/tools/search.ts` exports `buildSearchTool()` (tool name `search`), a combined RAG + web search tool. It is not in the `toolsDef` array; the commented-out import above it references a non-existent `../tools/rag-search.ts` — use `../tools/search.ts` if you register it.
 
@@ -139,7 +139,7 @@ npm run rag:ingest
 | NTP | `TIMESERVER_HOST`, `TIMESERVER_PORT`, `TIMESERVER_TIMEOUT` | Time server (time.nist.gov:123, 200 ms) |
 | Locale | `LOCALE_REGION`, `LOCALE_UNITS`, `LOCALE_MONTH`, `LOCALE_SHOWWEEKDAY`, `IS_24_HOUR_TIME` | Region (en-US), units, month style, weekday, 24h time |
 | Search | `SEARCH_HOST`, `SEARCH_TIMEOUT`, `SEARCH_PAGE_CONTENT_LIMIT`, `SEARCH_MAX_RESULTS` | SearXNG host, timeout ms, content limit, max results |
-| Scraper | `SCRAPER_CONTENT_LIMIT`, `SCRAPER_REQUEST_TIMEOUT`, `SCRAPER_BASIC_MIN_SCORE`, `SCRAPER_BASIC_MIN_LENGTH`, `SCRAPER_REDDIT_*` | Content limits, timeouts, readability thresholds, Reddit comment options |
+| Scraper | `SCRAPER_CONTENT_LIMIT`, `SCRAPER_REQUEST_TIMEOUT`, `SCRAPER_CRW_HOST`, `SCRAPER_CRW_API_KEY`, `SCRAPER_CRW_RENDER_JS`, `SCRAPER_CRW_ONLY_MAIN_CONTENT`, `SCRAPER_BASIC_MIN_SCORE`, `SCRAPER_BASIC_MIN_LENGTH` | Content limits, timeouts, CRW (Firecrawl-compatible) host/key/render options, readability thresholds |
 | RAG | `RAG_DATASTORE`, `RAG_STORAGE_URI`, `RAG_LIMIT_RESULTS`, `RAG_SOURCE_DIRECTORIES`, `RAG_INCLUDE_FILE_EXT`, `RAG_MAX_FILE_SIZE_MB`, `RAG_IGNORE_DIRS` | Datastore type/URI, ingest dirs (`\|`-separated), file filters |
 | LLM | `LLM_HOST`, `EMBEDDING_MODEL`, `EMBEDDING_MODEL_CONTEXT`, `SEMANTIC_SEARCH_ENABLED`, `SEMANTIC_SEARCH_MODEL`, `SEMANTIC_SEARCH_MODEL_CONTEXT` | Ollama host, embedding + semantic ranking models (Ollama model refs) |
 

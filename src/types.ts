@@ -131,16 +131,15 @@ export type AetheriumConfig = {
     scraper: {
         contentLimit: number,
         timeout: number,
+        crw: {
+            host: string,
+            apiKey: string,
+            renderJs: boolean | null,
+            onlyMainContent: boolean,
+        },
         basicHtmlReader: {
             minScore: number,
             minReadableLength: number,
-        },
-        reddit: {
-            maxTopLevelComments: number,
-            commentMaxContent: number,
-            maxCommentDepth: number,
-            commentMaxPerThreadDepth: number,
-            ignoreComments: boolean,
         }
     },
     search: {

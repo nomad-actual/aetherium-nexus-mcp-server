@@ -107,16 +107,15 @@ export function getConfig(): AetheriumConfig {
         scraper: {
             contentLimit: parseInt(process.env.SCRAPER_CONTENT_LIMIT || '', 10) || 1000,
             timeout: parseInt(process.env.SCRAPER_REQUEST_TIMEOUT || '', 10) || 5_000,
+            crw: {
+                host: process.env.SCRAPER_CRW_HOST || '',
+                apiKey: process.env.SCRAPER_CRW_API_KEY || '',
+                renderJs: process.env.SCRAPER_CRW_RENDER_JS === 'true' ? true : process.env.SCRAPER_CRW_RENDER_JS === 'false' ? false : null,
+                onlyMainContent: process.env.SCRAPER_CRW_ONLY_MAIN_CONTENT !== 'false',
+            },
             basicHtmlReader: {
                 minScore: parseInt(process.env.SCRAPER_BASIC_MIN_SCORE || '', 10) || 20,
                 minReadableLength: parseInt(process.env.SCRAPER_BASIC_MIN_LENGTH || '', 10) || 140,
-            },
-            reddit: {
-                maxTopLevelComments: parseInt(process.env.SCRAPER_REDDIT_MAX_TOP_LEVEL_COMMENTS || '', 10) || 30,
-                commentMaxContent: parseInt(process.env.SCRAPER_REDDIT_MAX_COMMENT_LENGTH || '', 10) || 1000,
-                maxCommentDepth: parseInt(process.env.SCRAPER_REDDIT_MAX_COMMENT_THREAD_DEPTH || '', 10) || 6,
-                commentMaxPerThreadDepth: parseInt(process.env.SCRAPER_REDDIT_MAX_COMMENTS_PER_THREAD_DEPTH || '', 10) || 5,
-                ignoreComments: process.env.SCRAPER_REDDIT_IGNORE_COMMENTS === 'true',
             }
         },
         locale: {
