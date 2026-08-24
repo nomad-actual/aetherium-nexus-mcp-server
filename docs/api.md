@@ -287,20 +287,6 @@ The server returns a `CallToolResult` with a `content` array. Each content item 
 
 ---
 
-## Disabled Tools
-
-The following tools exist in the codebase but are **not registered** in the MCP server:
-
-### `search`
-- Combines both web search and RAG search in a single call
-- Parameters: `query` (string, required), `useWebSearch` (boolean, default: false), `useRagSearch` (boolean, default: false), `semanticEvaluation` (boolean, default: false)
-
-### `rag-search`
-- Searches the local RAG knowledge base for relevant document passages
-- Parameters: `query` (string, required), `resultsLimit` (number, optional, max 50)
-
----
-
 ## Configuration
 
 The server behavior is controlled by the `AetheriumConfig` loaded from environment variables:
@@ -323,4 +309,3 @@ The server behavior is controlled by the `AetheriumConfig` loaded from environme
 | `timeserver.host` | NTP server host |
 | `timeserver.port` | NTP server port (default: 123) |
 | `timeserver.timeout` | NTP request timeout |
-| `rag.limitResults` | Default RAG search result limit |

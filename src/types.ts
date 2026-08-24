@@ -85,31 +85,7 @@ export type AetheriumLocaleOptions = {
         is24HourTime: boolean
 }
 
-export type RagIndexingOpts = {
-    db: {
-        type: string, // 'json' | 'opensearch'
-        hostUri: string // file://path/to/file.json | http://localhost:9200
-    }
-    limitResults: number
-    semanticSearchEnabled: boolean
-    directoriesToIngest: string[]
-    supportedFileExts: string[]
-    maxFileSizeMB: number
-    ignoreDirs: string[]
-}
-
-export type LlmClientOptions = {
-    type: string
-    host: string
-    embeddingModel: string
-    embeddingModelContext: number
-    semanticSearchModel: string
-    semanticSearchModelContext: number
-}
-
 export type AetheriumConfig = {
-    llmClient: LlmClientOptions,
-    rag: RagIndexingOpts,
     mcpServer: {
         port: number
         host: string
@@ -168,28 +144,6 @@ export type McpToolContent = {
 } | {
     type: 'image',
     image: string, // base64 encoded
-}
-
-export type RagSearchQuery = {
-    query: string
-    resultsLimit: number
-    maxContext: number,
-    embeddingModel: string
-    semanticRankingModel: string
-}
-
-export type RagSearchResultMetadata = {
-    uri: string
-    cosineSimilarityScore: number // 0-1
-    vector: number[]
-    bm25Score?: number, // 0-1
-    semanticScore: 0 | 1,
-    embeddingId: string, // uuid to id the embedding uniquely especially when combined with uri
-}
-
-export type RagSearchResult = {
-    content: string
-    metadata: RagSearchResultMetadata
 }
 
 export type ScrapeOptions = {

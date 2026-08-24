@@ -8,7 +8,6 @@ import { buildTimeTool } from '../tools/time.ts'
 import { buildWebSearchTool } from '../tools/websearch.ts'
 import { buildPackageTrackingTool } from '../tools/trackpackage.ts'
 import { buildWebScraperTool } from '../tools/website-scraper.ts'
-// import { buildRagSearchTool } from '../tools/rag-search.ts'
 
 const toolsDef: ToolsDef[] = [
     buildCurrentWeatherTool(),
@@ -17,7 +16,6 @@ const toolsDef: ToolsDef[] = [
     buildWebSearchTool(),
     buildPackageTrackingTool(),
     buildWebScraperTool(),
-    // buildRagSearchTool(),
 ]
 
 
