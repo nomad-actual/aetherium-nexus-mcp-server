@@ -55,31 +55,7 @@ export function getConfig(): AetheriumConfig {
     const searchContentLimit = parseInt(process.env.SEARCH_PAGE_CONTENT_LIMIT || '', 10) || 5_000
     const maxResults = parseInt(process.env.SEARCH_MAX_RESULTS || '', 10) || 5
 
-    const llmClient = {
-        type: 'ollama',
-        host: process.env.LLM_HOST || 'localhost',
-        embeddingModel: process.env.EMBEDDING_MODEL || '',
-        embeddingModelContext: parseInt(process.env.EMBEDDING_MODEL_CONTEXT || '', 10) || 512,
-        semanticSearchModel: process.env.SEMANTIC_SEARCH_MODEL || '',
-        semanticSearchModelContext: parseInt(process.env.SEMANTIC_SEARCH_MODEL_CONTEXT || '', 10) || 512,
-    }
-
-    const ragConfig = {
-        db: {
-            type: process.env.RAG_DATASTORE || '',
-            hostUri: process.env.RAG_STORAGE_URI || ''
-        },
-        limitResults: parseInt(process.env.RAG_LIMIT_RESULTS || '10', 10),
-        semanticSearchEnabled: process.env.SEMANTIC_SEARCH_ENABLED === 'true', // must have semanticSearchModel set
-        directoriesToIngest: (process.env.RAG_SOURCE_DIRECTORIES || '').split('|'),
-        supportedFileExts: (process.env.RAG_INCLUDE_FILE_EXT || '').split('|'),
-        maxFileSizeMB: parseInt(process.env.RAG_MAX_FILE_SIZE_MB || '', 10) || 10,
-        ignoreDirs: (process.env.RAG_IGNORE_DIRS || '').split('|'),
-    }
-
     config = {
-        llmClient: llmClient,
-        rag: ragConfig,
         mcpServer: {
             port: mcpServerPort,
             host: mcpServerHost,
