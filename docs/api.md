@@ -8,12 +8,12 @@
 |--------|-------|
 | Server | aetherium-nexus v1.0.0 |
 | Transport | Streamable HTTP (JSON-RPC 2.0) |
-| Endpoint | `POST /mcp` |
+| Endpoints | `POST /mcp` (MCP), `GET /health` (health check) |
 | Protocol | MCP SDK |
 
 ## Transport
 
-All tool calls are made via a single HTTP endpoint. The server is stateless — each request creates a new server instance.
+All tool calls are made via a single HTTP endpoint. The server is stateless — each request creates a new server instance, so no session management is required.
 
 **Base URL**: `http://<host>:<port>` (default: `http://localhost:3000`)
 
@@ -21,7 +21,7 @@ All tool calls are made via a single HTTP endpoint. The server is stateless — 
 
 ### Request Format
 
-Send a JSON-RPC 2.0 `tools/call` request to `POST /mcp`:
+Send a JSON-RPC 2.0 message to `POST /mcp`. The `id` may be a string or integer (notifications omit it). Supported methods: `initialize`, `notifications/initialized`, `ping`, `tools/list`, and `tools/call` (all 6 tools are invoked through `tools/call`). A single message or a JSON-RPC batch (array of messages) is accepted.
 
 ```json
 {
@@ -35,9 +35,18 @@ Send a JSON-RPC 2.0 `tools/call` request to `POST /mcp`:
 }
 ```
 
+**Required headers** (enforced by the Streamable HTTP transport):
+
+| Header | Value | If missing/invalid |
+|--------|-------|--------------------|
+| `Content-Type` | `application/json` | 415 |
+| `Accept` | must list both `application/json` and `text/event-stream` | 406 |
+
 ### Response Format
 
-The server returns a `CallToolResult` with a `content` array. Each content item has a `type` (`text` or `image`):
+Responses are returned as `application/json` (or streamed as `text/event-stream`, where each `message` event's `data` field is one JSON-RPC response). The shape of `result` depends on the method:
+
+- `tools/call` → `CallToolResult` with a `content` array. Each content item has a `type` (`text` or `image`):
 
 ```json
 {
@@ -52,7 +61,42 @@ The server returns a `CallToolResult` with a `content` array. Each content item 
 }
 ```
 
-### Error Response
+- `tools/list` → `{ "tools": [ { name, title, description, inputSchema, annotations }, ... ] }`
+- `initialize` → `{ "protocolVersion", "capabilities", "serverInfo": { name, version, title } }`
+- `ping` → `{}`
+
+Notifications (e.g. `notifications/initialized`) return **202 Accepted** with an empty body.
+
+### Tool Errors vs Protocol Errors
+
+- **Tool execution failures** (e.g. "Location not found", a scrape failure) are NOT HTTP errors. They return **200** with `result.isError: true` and the error message in `content`:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "content": [{ "type": "text", "text": "Location not found" }],
+    "isError": true
+  }
+}
+```
+
+- **Input validation failures** (arguments that don't match the tool's schema) are also returned as tool errors — `result.isError: true` with a message like `MCP error -32602: Input validation error: Invalid arguments for tool web-search: ...`.
+- **Protocol errors** (unknown method `-32601`, malformed message `-32700`, etc.) return a JSON-RPC error body at HTTP 200:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "error": {
+    "code": -32601,
+    "message": "Method not found"
+  },
+  "id": 1
+}
+```
+
+- **Transport-level failures** (bad headers, parse errors, uncaught exceptions) return a JSON-RPC error body with the corresponding HTTP status:
 
 ```json
 {
@@ -65,13 +109,26 @@ The server returns a `CallToolResult` with a `content` array. Each content item 
 }
 ```
 
+### HTTP Status Codes
+
+| Status | Meaning |
+|--------|---------|
+| `200` | JSON-RPC response (success `result` or protocol `error`) |
+| `202` | Notification accepted (empty body) |
+| `400` | Invalid JSON (HTML error page) / invalid JSON-RPC message / unsupported protocol version (JSON-RPC error body) |
+| `405` | Method not allowed on `/mcp` (GET, DELETE) |
+| `406` | `Accept` header missing `application/json` or `text/event-stream` |
+| `415` | `Content-Type` is not `application/json` |
+| `500` | Uncaught internal server error |
+
 ### HTTP Methods
 
 | Method | Path | Behavior |
 |--------|------|----------|
-| `POST` | `/mcp` | Handle MCP tool calls (JSON-RPC) |
+| `POST` | `/mcp` | Handle MCP requests (JSON-RPC 2.0) |
 | `GET` | `/mcp` | Not allowed — returns 405 |
 | `DELETE` | `/mcp` | Not allowed — returns 405 |
+| `GET` | `/health` | Health check — returns `{ "status": "ok", "uptime": <seconds> }` |
 
 ---
 
@@ -217,7 +274,7 @@ The server returns a `CallToolResult` with a `content` array. Each content item 
 
 ### `track-package`
 
-**Description**: Tracks the status of one or more packages using tracking numbers. Returns text info and screenshots from carrier tracking pages.
+**Description**: Tracks the status of one or more packages using tracking numbers. Returns courier info and scraped text content from carrier tracking pages.
 
 **Method**: `POST /mcp`
 
@@ -225,7 +282,7 @@ The server returns a `CallToolResult` with a `content` array. Each content item 
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `packages` | `string[]` | Yes | Array of tracking numbers (minimum 1, maximum 20) |
+| `packages` | `string[]` | Yes | Array of tracking numbers (minimum 1; the server tracks up to 20 per call — more returns a text notice, not a validation error) |
 
 **Attributes**:
 - **ReadOnlyHint**: `true`
@@ -247,7 +304,7 @@ The server returns a `CallToolResult` with a `content` array. Each content item 
 }
 ```
 
-**Response**: Returns `CallToolResult` with text summaries and PNG screenshots of carrier tracking pages for each package.
+**Response**: Returns `CallToolResult` with a courier info summary (tracking number, courier name/code) and the scraped tracking page content for each package. Packages whose tracking URL yields no content are logged and skipped.
 
 ---
 
