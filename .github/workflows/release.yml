@@ -14,7 +14,10 @@ concurrency:
 
 jobs:
   release:
-    if: github.event.pull_request.merged == true
+    if: >-
+      github.event.pull_request.merged == true &&
+      !startsWith(github.head_ref, 'chore/') &&
+      !startsWith(github.event.pull_request.title, 'chore:')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

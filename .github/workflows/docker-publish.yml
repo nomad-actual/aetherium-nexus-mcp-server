@@ -20,6 +20,11 @@ env:
 
 jobs:
   build:
+    # Skip build for chore PRs; tag builds always run
+    if: >-
+      github.event_name != 'pull_request' ||
+      (!startsWith(github.head_ref, 'chore/') &&
+       !startsWith(github.event.pull_request.title, 'chore:'))
 
     runs-on: ubuntu-latest
     permissions:
