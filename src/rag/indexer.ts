@@ -1,13 +1,10 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { Ollama } from 'ollama'
 import { ingest } from './ingestor/ingestor.ts';
 import { getConfig } from '../utils/config.ts';
 import type { AetheriumConfig } from '../types.ts';
 import { getRagDatastore } from './database/datastore.ts';
-
-// todo: move to some AI client module
-const ollamaClient = new Ollama({ host: getConfig().llmClient.host })
+import { getEmbeddingProvider } from './embeddings/factory.ts';
 
 async function findFiles(fp: string, config: AetheriumConfig) {
     const fileObjs = await fs.readdir(fp, { withFileTypes: true, recursive: true })
@@ -39,6 +36,7 @@ async function crawlAllDirs(config: AetheriumConfig) {
 }
 
 export async function buildEmbeddings(config: AetheriumConfig) {
+    const embeddingProvider = getEmbeddingProvider(config)
     console.log(config.rag)
 
     const files = await crawlAllDirs(config)
@@ -60,21 +58,14 @@ export async function buildEmbeddings(config: AetheriumConfig) {
 
         for (let i = 0; i < chunked.length; i++) {
             const toProcess = chunked[i]
-            let embeddings
+            let embeddings: number[][]
 
             try {
-                embeddings = await ollamaClient.embed({
-                    model: config.llmClient.embeddingModel,
-                    input: toProcess,
-                    truncate: false,
-                    options: {
-                        num_ctx: config.llmClient.embeddingModelContext,
-                    },
-                })
+                embeddings = await embeddingProvider.embed(toProcess)
 
                 embeddingBatch.push({
                     content: toProcess,
-                    vector: embeddings.embeddings[0],
+                    vector: embeddings[0],
                     uri: `file://${filePath}`,
                 })
 

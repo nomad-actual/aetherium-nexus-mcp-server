@@ -13,11 +13,14 @@ export class OpenSearchRagDatastore implements RagDataStore {
     // on change, the embedding needs to reingest everything since the dimensions are
     // not the same
 
-    constructor(host: string) {
+    constructor(host: string, embeddingDimensions: number = 1024) {
         this.client = new Client({
             node: host,
         })
+        this._embeddingDimensions = embeddingDimensions
     }
+
+    private _embeddingDimensions: number
 
     async reset() {
         return this.client.indices.delete({ index: this.indexName })
@@ -38,8 +41,7 @@ export class OpenSearchRagDatastore implements RagDataStore {
                         properties: {
                             ragVector: {
                                 type: "knn_vector",
-                                // this cannot stay this way - must be tied to model somehow
-                                dimension: 1024,
+                                dimension: this._embeddingDimensions,
                                 space_type: 'cosinesimil'
                             },
                         },

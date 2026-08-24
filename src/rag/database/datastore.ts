@@ -45,7 +45,15 @@ export async function getRagDatastore(config: AetheriumConfig): Promise<RagDataS
     }
 
     else if (!datastore && config.rag.db.type === 'opensearch') {
-        datastore = new OpenSearchRagDatastore(config.rag.db.hostUri)
+        let dimensions: number
+        if (config.llmClient.embeddingProvider === 'openai') {
+            dimensions = config.llmClient.openaiDimensions
+                || { 'text-embedding-3-large': 3072, 'text-embedding-3-small': 1536, 'text-embedding-ada-002': 1536 }[config.llmClient.openaiEmbeddingModel]
+                || 1536
+        } else {
+            dimensions = config.llmClient.embeddingModelContext
+        }
+        datastore = new OpenSearchRagDatastore(config.rag.db.hostUri, dimensions)
     }
 
     if (!datastore) {
