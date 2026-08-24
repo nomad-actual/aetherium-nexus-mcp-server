@@ -2,10 +2,10 @@ import { getTracking, type TrackingNumber } from "ts-tracking-number";
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.d.ts';
 import z from 'zod';
 
-import type { AetheriumConfig, ToolsDef } from '../types.ts';
+import type { AetheriumConfig, McpToolContent, ToolsDef } from '../types.ts';
 import { getConfig } from '../utils/config.ts';
 import logger from '../utils/logger.ts';
-import { screenshotWebPage } from '../utils/webscraper/webscraper.ts';
+import { doWebScrape } from '../utils/webscraper/webscraper.ts';
 
 function trackOnePackage(packageNumber: string, config: AetheriumConfig): TrackingNumber | null {
     const info = getTracking(packageNumber);
@@ -44,28 +44,21 @@ async function trackPakages(args: { packages: string[] }, config: AetheriumConfi
 
         const urlToScrape = trackingInfo.trackingUrl.replace('%s', trackingInfo.trackingNumber)
 
-        // some websites take a long time to render...
-        const options = { width: 1280, height: 1200, timeout: 30_000, signal: abortSignal }
-        const screenshot = await screenshotWebPage(urlToScrape, options)
-
         const trackingContent = {
             trackingNumber: trackingInfo.trackingNumber,
             courier: trackingInfo.courier,
             name: trackingInfo.name,
         }
 
-        results.push({ type: 'text', text: JSON.stringify(trackingContent) })
-        if (screenshot && Buffer.isBuffer(screenshot)) {
-            results.push({
-                type: 'image',
-                data: screenshot.toString('base64'),
-                mimeType: 'image/png',
-                annotations: {
-                    'audience': ['user'],
-                    'priority': 0.9,
-                }
-            })
+        const scraped: McpToolContent[] = await doWebScrape(urlToScrape, config, abortSignal)
+
+        if (scraped.length === 0) {
+            logger.info({ result: p, message: `No tracking content found at ${urlToScrape}` })
+            continue;
         }
+
+        results.push({ type: 'text', text: JSON.stringify(trackingContent) })
+        results.push(...scraped)
     }
 
     return {

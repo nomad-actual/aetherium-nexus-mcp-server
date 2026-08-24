@@ -53,7 +53,7 @@ src/
 | `fetch-weather-forecast` | 7-day weather forecast for a location |
 | `fetch-current-time` | NTP-synced time |
 | `web-search` | Web search via SearXNG with content scraping |
-| `track-package` | Package tracking with courier info and screenshots |
+| `track-package` | Package tracking with courier info and tracking page content |
 | `scrape-website` | Extract readable content from any URL (CRW primary, local HTML fallback) |
 
 See `docs/api.md` for full API documentation with input parameters and example JSON-RPC payloads.

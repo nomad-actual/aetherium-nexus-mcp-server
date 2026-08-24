@@ -157,6 +157,45 @@ A healthy server responds with an SSE `message` event containing `serverInfo: { 
 - **Always check `signal.throwIfAborted()`** early in your handler. The MCP server wraps each tool call with `AbortSignal.timeout(config.mcpServer.toolCallRequestTimeout)` (default 10s). Long-running work should also pass the signal along to downstream calls when possible.
 - **No build step** — the project runs `.ts` files natively via `node --experimental-strip-types`. TypeScript is checked with `npx tsc --noEmit`, not compiled.
 
+## Code Style
+
+Applies to all code, comments, commit messages, and replies.
+
+### Communication
+
+- Human-facing text (comment, commit message, reply): as few words as possible. Pick every word meticulously. Be down to the point. Less is more.
+- No superlatives, no praise. Give the cold hard truth.
+
+### Code
+
+- No magic numbers or strings. Extract recurring or meaningful values into descriptive `const` at the top of the file, or a string literal union type. Self-explanatory one-offs stay inline. Spec values (e.g. HTTP 200 OK) get a constant regardless.
+  - This codebase uses **string literal union types, not TS enums** — `node --experimental-strip-types` rejects `enum` (strip-only mode). Idiom: `LocaleUnit = 'metric' | 'imperial'` (`src/types.ts:3`).
+- Reduce indentation. Avoid the arrow anti-pattern (deeply nested blocks). Use early `return` and `continue`.
+- Function names under 30 characters.
+- No boolean function parameters. Use an enum-like string literal union for multi-state parameters. Booleans appear only as options-object fields (existing idiom).
+- Blank lines between logical blocks. Let the reader breathe.
+- Comments: small `//` line comments (codebase idiom, not JSDoc) explaining *what* a block does and *why*. Use examples when possible. ASCII drawings for complete systems. JSDoc only for public contracts (see `src/utils/promises.ts`).
+- Visibility: fields and functions are private by default (module scope or `private`). Widening `private` to public is a breaking design shift — ask for explicit approval first.
+- Program to levels of abstraction. Low-level mechanics (raw HTTP, HTML walking, vector storage) live in dedicated driver layers behind interfaces (`IScraper`, `datastore.ts`). Upper layers work with domain concepts, never raw details.
+- Strict layering: `app.ts` → `server/` → `tools/` → `utils/` / `rag/`. Each layer talks only to its immediate neighbor below. Never punch through (a tool must not call OpenSearch directly — route via `rag/search.ts`).
+  - Known violations — do not add more, do not refactor without approval: `rag/reset.ts` constructs `OpenSearchRagDatastore` directly (bypasses the `getRagDatastore()` factory); `tools/time.ts` exports a utility imported by other tools; the Ollama client is duplicated in `rag/search.ts` and `rag/indexer.ts`.
+- Always use `{}`, even on a one-line `if`. (Existing braceless guards: fix incrementally, only when touching the file.)
+- Don't touch unrelated blocks. Don't add comments to code you did not create or modify. Minimize changed lines.
+
+### Commit messages
+
+1. Separate the subject line from the body with a single blank line.
+2. Limit the subject line to 50 characters (72 is the absolute hard limit).
+3. Capitalize the first letter of the subject line.
+4. Do not end the subject line with a period.
+5. Use the imperative mood ("Fix bug", not "Fixed" or "Adds"). Test: it must complete "If applied, this commit will [subject]".
+6. Wrap the body text manually at 72 characters.
+7. The body explains what and why, not how. The code explains the how.
+
+### Bug fixes
+
+There is no test framework (`npm test` is a stub). Before writing a fix, write the failing reproduction first — a small script or `curl` against a running server (see "Verifying your work"). Observe it failing. Write the fix. Observe it passing.
+
 ## Documentation
 
 - **`openapi.json`** (root) and **`docs/api.md`** are generated from the tool definitions by the `api-docs` opencode skill (`.opencode/skills/api-docs/`). Regenerate them after adding/changing tools.

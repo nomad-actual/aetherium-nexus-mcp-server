@@ -14,7 +14,10 @@ concurrency:
 
 jobs:
   release:
-    if: github.event.pull_request.merged == true
+    if: >-
+      github.event.pull_request.merged == true &&
+      !startsWith(github.head_ref, 'chore/') &&
+      !startsWith(github.event.pull_request.title, 'chore:')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -29,21 +32,23 @@ jobs:
           TITLE: ${{ github.event.pull_request.title }}
           BRANCH: ${{ github.event.pull_request.head_ref }}
         run: |
-          # 1. PR title prefix (conventional-commit style, e.g. "fix: ...")
-          # 2. Branch prefix (e.g. "fix/...") — colons are invalid in branch names
+          # 1. Branch prefix (e.g. "fix/...")
+          # 2. PR title prefix (conventional-commit style, e.g. "fix: ...")
           # 3. Fall through to minor
           BUMP=""
-          case "$TITLE" in
-            major:*) BUMP=major ;;
-            fix:*|hotfix:*) BUMP=patch ;;
-            *:*) BUMP=minor ;;
+          case "$BRANCH" in
+            major/*) BUMP=major ;;
+            fix/*|hotfix/*) BUMP=patch ;;
           esac
           if [ -z "$BUMP" ]; then
-            case "$BRANCH" in
-              major/*) BUMP=major ;;
-              fix/*|hotfix/*) BUMP=patch ;;
-              *) BUMP=minor ;;
+            case "$TITLE" in
+              major:*) BUMP=major ;;
+              fix:*|hotfix:*) BUMP=patch ;;
+              *:*) BUMP=minor ;;
             esac
+          fi
+          if [ -z "$BUMP" ]; then
+            BUMP=minor
           fi
           echo "bump=$BUMP" >> "$GITHUB_OUTPUT"
           echo "Bump: $BUMP (title: $TITLE, branch: $BRANCH)"
