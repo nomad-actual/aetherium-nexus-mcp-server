@@ -15,7 +15,10 @@ concurrency:
 
 jobs:
   release:
-    # Run only when a PR is merged into main.
+    # Run only when a PR is merged into main. The push event is intentionally
+    # not used: for squash/rebase merges the head commit message is not a
+    # merge commit, so a push-based guard cannot reliably dedupe, and the
+    # PR + push jobs raced to create duplicate releases.
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
