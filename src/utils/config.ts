@@ -34,6 +34,7 @@ export function getConfig(): AetheriumConfig {
     const mcpServerCorsCorsAllowedOrigins = process.env.MCP_SERVER_CORS_ALLOWED_ORIGINS ? process.env.MCP_SERVER_CORS_ALLOWED_ORIGINS.split('|') : [];
     const mcpServerCorsCorsAllowedHosts = process.env.MCP_SERVER_CORS_ALLOWED_HOSTS ? process.env.MCP_SERVER_CORS_ALLOWED_HOSTS.split('|') : [];
     const mcpServerTitle = process.env.MCP_SERVER_TITLE || 'Default MCP server';
+    const mcpServerVersion = process.env.MCP_SERVER_VERSION || 'dev';
     const toolCallTimeout = parseInt(process.env.TOOL_CALL_TIMEOUT || '', 10) || 30_000;
 
     const lat = parseFloat(process.env.DEFAULT_LOCATION_LAT || '') || 34.052235;
@@ -62,6 +63,7 @@ export function getConfig(): AetheriumConfig {
             corsAllowedHosts: mcpServerCorsCorsAllowedHosts,
             corsAllowedOrigins: mcpServerCorsCorsAllowedOrigins,
             title: mcpServerTitle,
+            version: mcpServerVersion,
             toolCallRequestTimeout: toolCallTimeout,
         },
         defaultLocation: {

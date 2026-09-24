@@ -1,12 +1,15 @@
 name: Release
 
 on:
+  push:
+    branches: [main]
   pull_request:
     types: [closed]
     branches: [main]
 
 permissions:
   contents: write
+  packages: write
 
 concurrency:
   group: release
@@ -14,10 +17,11 @@ concurrency:
 
 jobs:
   release:
+    # PR: run only when merged. Push: skip PR merge commits — the PR event
+    # already handled versioning for them.
     if: >-
-      github.event.pull_request.merged == true &&
-      !startsWith(github.head_ref, 'chore/') &&
-      !startsWith(github.event.pull_request.title, 'chore:')
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true) ||
+      (github.event_name == 'push' && !startsWith(github.event.head_commit.message, 'Merge pull request'))
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -29,31 +33,29 @@ jobs:
       - name: Determine version bump
         id: version
         env:
-          TITLE: ${{ github.event.pull_request.title }}
           BRANCH: ${{ github.event.pull_request.head_ref }}
+          COMMIT: ${{ github.event.head_commit.message }}
         run: |
-          # 1. Branch prefix (e.g. "fix/...")
-          # 2. PR title prefix (conventional-commit style, e.g. "fix: ...")
-          # 3. Fall through to minor
-          BUMP=""
-          case "$BRANCH" in
-            major/*) BUMP=major ;;
-            fix/*|hotfix/*) BUMP=patch ;;
-          esac
-          if [ -z "$BUMP" ]; then
-            case "$TITLE" in
-              major:*) BUMP=major ;;
-              fix:*|hotfix:*) BUMP=patch ;;
-              *:*) BUMP=minor ;;
-            esac
+          # PR merges: bump from the branch name (major/, fix/, hotfix/, else minor).
+          # Direct pushes: bump from the pushed commit's subject line
+          # (major:, fix:, hotfix:, else minor).
+          SOURCE="$BRANCH"
+          if [ -z "$SOURCE" ]; then
+            SOURCE="$(printf '%s' "$COMMIT" | head -n 1)"
           fi
+          BUMP=""
+          case "$SOURCE" in
+            major/*|major:*) BUMP=major ;;
+            fix/*|hotfix/*|fix:*|hotfix:*) BUMP=patch ;;
+          esac
           if [ -z "$BUMP" ]; then
             BUMP=minor
           fi
           echo "bump=$BUMP" >> "$GITHUB_OUTPUT"
-          echo "Bump: $BUMP (title: $TITLE, branch: $BRANCH)"
+          echo "Bump: $BUMP (source: $SOURCE)"
 
       - name: Create release
+        id: create
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -71,10 +73,43 @@ jobs:
             esac
             VERSION="${MAJOR}.${MINOR}.${PATCH}"
           fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           if git rev-parse -q --verify "refs/tags/v${VERSION}" >/dev/null; then
-            echo "Tag v${VERSION} already exists, skipping"
+            echo "Tag v${VERSION} already exists, skipping release"
             exit 0
           fi
           gh release create "v${VERSION}" \
             --title "v${VERSION}" \
             --generate-notes
+
+  docker:
+    needs: release
+    if: always() && needs.release.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log into registry ghcr.io
+        uses: docker/login-action@v3
+        with:
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:v${{ needs.release.outputs.version }}
+            ghcr.io/${{ github.repository }}:latest
+          build-args: |
+            VERSION=v${{ needs.release.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
