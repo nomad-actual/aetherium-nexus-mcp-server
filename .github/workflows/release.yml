@@ -1,8 +1,6 @@
 name: Release
 
 on:
-  push:
-    branches: [main]
   pull_request:
     types: [closed]
     branches: [main]
@@ -17,11 +15,11 @@ concurrency:
 
 jobs:
   release:
-    # PR: run only when merged. Push: skip PR merge commits — the PR event
-    # already handled versioning for them.
-    if: >-
-      (github.event_name == 'pull_request' && github.event.pull_request.merged == true) ||
-      (github.event_name == 'push' && !startsWith(github.event.head_commit.message, 'Merge pull request'))
+    # Run only when a PR is merged into main. The push event is intentionally
+    # not used: for squash/rebase merges the head commit message is not a
+    # merge commit, so a push-based guard cannot reliably dedupe, and the
+    # PR + push jobs raced to create duplicate releases.
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -34,19 +32,13 @@ jobs:
         id: version
         env:
           BRANCH: ${{ github.event.pull_request.head_ref }}
-          COMMIT: ${{ github.event.head_commit.message }}
         run: |
-          # PR merges: bump from the branch name (major/, fix/, hotfix/, else minor).
-          # Direct pushes: bump from the pushed commit's subject line
-          # (major:, fix:, hotfix:, else minor).
+          # Bump from the branch name (major/, fix/, hotfix/, else minor).
           SOURCE="$BRANCH"
-          if [ -z "$SOURCE" ]; then
-            SOURCE="$(printf '%s' "$COMMIT" | head -n 1)"
-          fi
           BUMP=""
           case "$SOURCE" in
-            major/*|major:*) BUMP=major ;;
-            fix/*|hotfix/*|fix:*|hotfix:*) BUMP=patch ;;
+            major/*) BUMP=major ;;
+            fix/*|hotfix/*) BUMP=patch ;;
           esac
           if [ -z "$BUMP" ]; then
             BUMP=minor
