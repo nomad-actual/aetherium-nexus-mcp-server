@@ -102,7 +102,7 @@ All configuration comes from environment variables. Copy `.env.example` to `.env
 
 | Group | Variables | Description |
 |-------|-----------|-------------|
-| **MCP Server** | `MCP_SERVER_PORT`, `MCP_SERVER_HOST`, `MCP_SERVER_TITLE`, `MCP_SERVER_CORS_*`, `TOOL_CALL_TIMEOUT` | Server listen address, CORS, title, tool call timeout |
+| **MCP Server** | `MCP_SERVER_PORT`, `MCP_SERVER_HOST`, `MCP_SERVER_TITLE`, `MCP_SERVER_VERSION`, `MCP_SERVER_CORS_*`, `TOOL_CALL_TIMEOUT` | Server listen address, CORS, title, reported version, tool call timeout |
 | **Location** | `DEFAULT_LOCATION_LAT`, `DEFAULT_LOCATION_LON` | Default lat/lon for weather fallback |
 | **NTP** | `TIMESERVER_HOST`, `TIMESERVER_PORT`, `TIMESERVER_TIMEOUT` | NTP time server settings |
 | **Locale** | `LOCALE_REGION`, `LOCALE_UNITS`, `LOCALE_MONTH`, `LOCALE_SHOWWEEKDAY`, `IS_24_HOUR_TIME` | Date/time formatting and units |
@@ -134,13 +134,20 @@ npx tsc --noEmit
 
 ## Testing
 
-No test framework is configured.
+Unit tests use [AVA](https://github.com/avajs/ava) and run natively via Node's type stripping — no build step.
+
+```bash
+npm test
+```
 
 ## CI/CD
 
-GitHub Actions publishes a Docker image to GHCR on push to `main`, on semver tags, and on a daily schedule. Images are signed with cosign.
+A single GitHub Actions workflow (`.github/workflows/release.yml`) creates the release and publishes the Docker image:
 
-Semantic releases are created automatically when a PR is merged into `main`. The version bump comes from the PR title prefix (`major:`, `fix:`/`hotfix:`, anything else), or from the branch prefix (`major/`, `fix/`/`hotfix/`, anything else) when the title has no prefix. See `docs/AGENTS.md` for details.
+- **PR merged into `main`** — the version bump comes from the branch name (`major/` → major, `fix/`/`hotfix/` → patch, anything else → minor). A `vX.Y.Z` tag and GitHub release are created, and the image is pushed to GHCR as `vX.Y.Z` and `latest`.
+- **Direct push to `main`** — the version bump comes from the pushed commit message (`major:` → major, `fix:`/`hotfix:` → patch, anything else → minor). PR merge commits are skipped since the PR event already released them.
+
+The release version is baked into the image (`MCP_SERVER_VERSION`) and reported by the server. See `docs/AGENTS.md` for details.
 
 ## License
 

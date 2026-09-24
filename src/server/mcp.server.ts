@@ -23,7 +23,7 @@ export function buildMCPServer(config: AetheriumConfig): McpServer {
     const mcpServerInstance = new McpServer(
         { 
             name: config.mcpServer.title,
-            version: '1.0.0',
+            version: config.mcpServer.version,
             title: config.mcpServer.title,
         },
         {

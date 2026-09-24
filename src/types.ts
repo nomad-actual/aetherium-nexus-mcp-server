@@ -92,6 +92,7 @@ export type AetheriumConfig = {
         corsAllowedHosts: string[],
         corsAllowedOrigins: string[],
         title: string,
+        version: string,
         toolCallRequestTimeout: number
     },
     defaultLocation: {

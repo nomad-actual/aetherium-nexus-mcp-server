@@ -1,6 +1,9 @@
 FROM node:26-alpine3.23
 ENV NODE_ENV=production
 
+ARG VERSION=dev
+ENV MCP_SERVER_VERSION=${VERSION}
+
 WORKDIR /app
 
 COPY . .

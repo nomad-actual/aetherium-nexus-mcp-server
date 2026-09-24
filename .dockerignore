@@ -38,7 +38,3 @@ test-results.xml
 # Documentation
 docs/
 *.md
-
-# Version control system files
-.git/
-.gitignore
