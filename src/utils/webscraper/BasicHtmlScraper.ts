@@ -11,6 +11,7 @@ const FILTER_ACCEPT = 1
 const FILTER_REJECT = 2
 import { abort } from '../promises.ts'
 import { fetch as undiciFetch } from 'undici'
+import { normalizeWhitespace } from './normalizeWhitespace.ts'
 
 const DEFAULT_TIMEOUT = 10_000
 
@@ -104,10 +105,7 @@ export default class BasicHtmlScraper implements IScraper {
         } = html
 
         // cleanup content
-        let processedTextContent = (textContent || '')
-            .replaceAll(/\n/g, ' ')
-            .replaceAll(/\s{2,}/g, ' ')
-            .trim()
+        let processedTextContent = normalizeWhitespace(textContent || '')
 
         const maxContentLength = config.scraper.contentLimit
         if (processedTextContent.length > maxContentLength) {

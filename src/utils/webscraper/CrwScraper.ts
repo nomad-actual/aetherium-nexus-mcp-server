@@ -3,6 +3,7 @@ import { type IScraper } from './IScraper.ts'
 import { capitalizeFirstLetter } from '../formatter.ts'
 import logger from '../logger.ts'
 import { fetch as undiciFetch } from 'undici'
+import { normalizeWhitespace } from './normalizeWhitespace.ts'
 
 type CrwScrapeResponse = {
     success: boolean
@@ -86,7 +87,7 @@ export default class CrwScraper implements IScraper {
         const totalDuration = ((Date.now() - startTime) / 1000).toFixed(2)
         logger.debug(`[CrwScraper] CRW complete (${totalDuration}s) for ${url}`)
 
-        let content = markdown.replace(/\n{3,}/g, '\n\n')
+        let content = normalizeWhitespace(markdown)
 
         const maxContentLength = config.scraper.contentLimit
         if (content.length > maxContentLength) {
@@ -99,8 +100,6 @@ export default class CrwScraper implements IScraper {
 
             content = content.substring(0, truncIdx)
         }
-
-        content = content.trim()
 
         const altSiteName = capitalizeFirstLetter(new URL(url).hostname)
 
