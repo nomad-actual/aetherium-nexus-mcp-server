@@ -104,7 +104,3 @@ jobs:
             ghcr.io/${{ github.repository }}:latest
           build-args: |
             VERSION=v${{ needs.release.outputs.version }}
-          # This workflow runs on `pull_request` [closed] and only has
-          # read-only access to the Actions cache, so exporting (cache-to)
-          # fails. The cache is populated by the CI docker job on push to main.
-          cache-from: type=gha
