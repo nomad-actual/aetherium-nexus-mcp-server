@@ -29,7 +29,9 @@ src/
         ├── webscraper.ts # Orchestrator (routes to the right scraper)
         ├── BasicHtmlScraper.ts
         ├── CrwScraper.ts # Firecrawl-compatible CRW API client (primary web scraper)
-        └── IScraper.ts   # Scraper interface
+        ├── IScraper.ts   # Scraper interface
+        ├── normalizeWhitespace.ts # Whitespace normalization for scraped markdown
+        └── test/         # Unit tests — see "Testing" for the test-location convention
 ```
 
 Repo root also contains `openapi.json` + `docs/api.md` (generated API docs).
@@ -94,18 +96,27 @@ The Dockerfile uses `node:24-alpine3.23`, installs production deps only (`npm ci
 | Search | `SEARCH_HOST`, `SEARCH_TIMEOUT`, `SEARCH_PAGE_CONTENT_LIMIT`, `SEARCH_MAX_RESULTS` | SearXNG host, timeout ms, content limit, max results |
 | Scraper | `SCRAPER_CONTENT_LIMIT`, `SCRAPER_REQUEST_TIMEOUT`, `SCRAPER_CRW_HOST`, `SCRAPER_CRW_API_KEY`, `SCRAPER_CRW_RENDER_JS`, `SCRAPER_CRW_ONLY_MAIN_CONTENT`, `SCRAPER_BASIC_MIN_SCORE`, `SCRAPER_BASIC_MIN_LENGTH` | Content limits, timeouts, CRW (Firecrawl-compatible) host/key/render options, readability thresholds |
 
+## Testing
+
+Unit tests use [AVA](https://github.com/avajs/ava) (`npm test`), configured in the `ava` key of `package.json` (`extensions: ["ts"]`, `files: ["**/*.test.ts"]`). Tests run natively via Node 24 type stripping — no loader or build step.
+
+**Convention: unit tests live in a `test/` subfolder inside the directory they test.** E.g. tests for `src/utils/webscraper/normalizeWhitespace.ts` go in `src/utils/webscraper/test/normalizeWhitespace.test.ts`. Test files are named `*.test.ts` and import the code under test with an explicit `.ts` extension.
+
 ## Verifying your work
 
-There is no test framework (`npm test` is a placeholder). Verify changes like this:
+Verify changes like this:
 
 ```bash
 # 1. Typecheck (the project's "build" step)
 npx tsc --noEmit
 
-# 2. Start the server
+# 2. Run unit tests
+npm test
+
+# 3. Start the server
 npm run start:dev
 
-# 3. Smoke-test the MCP endpoint (new terminal)
+# 4. Smoke-test the MCP endpoint (new terminal)
 curl -s -X POST http://localhost:3000/mcp \
   -H 'Content-Type: application/json' \
   -H 'Accept: application/json, text/event-stream' \
@@ -194,7 +205,7 @@ Applies to all code, comments, commit messages, and replies.
 
 ### Bug fixes
 
-There is no test framework (`npm test` is a stub). Before writing a fix, write the failing reproduction first — a small script or `curl` against a running server (see "Verifying your work"). Observe it failing. Write the fix. Observe it passing.
+Before writing a fix, write the failing reproduction first — a failing unit test where practical (see "Testing"), or a small script or `curl` against a running server (see "Verifying your work"). Observe it failing. Write the fix. Observe it passing.
 
 ## Documentation
 
