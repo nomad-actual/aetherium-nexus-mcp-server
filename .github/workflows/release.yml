@@ -74,7 +74,7 @@ jobs:
             --title "v${VERSION}" \
             --generate-notes
 
-  docker:
+  build-container:
     needs: release
     if: always() && needs.release.result == 'success'
     runs-on: ubuntu-latest
@@ -104,5 +104,3 @@ jobs:
             ghcr.io/${{ github.repository }}:latest
           build-args: |
             VERSION=v${{ needs.release.outputs.version }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
