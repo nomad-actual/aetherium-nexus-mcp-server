@@ -78,8 +78,6 @@ export default class BasicHtmlScraper implements IScraper {
 
         // Pass configurable thresholds to Readability:
         //   charThreshold: minimum character count needed for a result (from config.minReadableLength)
-        //   Note: minScore was a config option defined in the project but no longer supported
-        //   in Readability 0.6.0 — it is ignored silently at runtime.
         const reader = new Readability(dom.window.document, {
             charThreshold: config.scraper.basicHtmlReader.minReadableLength,
             debug: false,

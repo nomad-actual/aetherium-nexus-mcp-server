@@ -115,7 +115,6 @@ export type AetheriumConfig = {
             onlyMainContent: boolean,
         },
         basicHtmlReader: {
-            minScore: number,
             minReadableLength: number,
         }
     },
