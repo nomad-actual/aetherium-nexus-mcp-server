@@ -1,6 +1,6 @@
 import test from 'ava'
 import type { LocationResult } from '../../types.ts'
-import { closestMatch, makeLocationString } from '../location.ts'
+import { closestMatch, findNearestCity, makeLocationString } from '../location.ts'
 
 function makeLocation(overrides: Partial<LocationResult> = {}): LocationResult {
     return {
@@ -83,4 +83,17 @@ test('makeLocationString: omits state when it duplicates the name case-insensiti
 
 test('makeLocationString: joins name and state with a comma', (t) => {
     t.is(makeLocationString(makeLocation({ name: 'San Francisco', state: 'California' })), 'San Francisco, California')
+})
+
+test('findNearestCity: finds Los Angeles for Los Angeles coordinates', (t) => {
+    const city = findNearestCity(34.052235, -118.243683)
+    t.is(city?.name, 'Los Angeles')
+    t.is(city?.state, 'California')
+    t.is(city?.country, 'US')
+})
+
+test('findNearestCity: finds London for London coordinates', (t) => {
+    const city = findNearestCity(51.5074, -0.1278)
+    t.is(city?.name, 'London')
+    t.is(city?.country, 'GB')
 })
