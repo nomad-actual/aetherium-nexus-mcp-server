@@ -233,6 +233,20 @@ function buildWeatherData(response: WeatherApiResponse): WeatherData {
     return weather
 }
 
+async function resolveLocationLookup(location: string | undefined, config: AetheriumConfig): Promise<string> {
+    if (location) {
+        return location
+    }
+
+    const city = findNearestCity(config.defaultLocation.lat, config.defaultLocation.lon)
+
+    if (!city) {
+        throw new Error('No location could be determined')
+    }
+
+    return `${city.name}, ${city.state || city.country}`
+}
+
 async function fetchLocation(locationArg: string, config: AetheriumConfig, signal: AbortSignal): Promise<LocationResult | null> {
     if (!locationArg) {
         return null
@@ -257,21 +271,7 @@ async function currentWeatherToolHandler(
     config: AetheriumConfig,
     signal: AbortSignal
 ): Promise<CallToolResult> {
-    let lookup = location
-
-    if (!location) {
-        const city = findNearestCity(config.defaultLocation.lat, config.defaultLocation.lon)
-        
-        if (!city) {
-            throw new Error('No location could be determined')
-        }
-
-        lookup = `${city.name}, ${city.state || city.country}`
-    }
-
-    if (!lookup) {
-        throw new Error('No location could be determined')
-    }
+    const lookup = await resolveLocationLookup(location, config)
 
     const locationObj = await fetchLocation(lookup, config, signal)
 
@@ -325,7 +325,8 @@ async function currentWeatherToolHandler(
 }
 
 async function weatherForecastToolHandler({ location }: any, config: AetheriumConfig, signal: AbortSignal): Promise<CallToolResult> {
-    const locationObj = await fetchLocation(location, config, signal)
+    const lookup = await resolveLocationLookup(location, config)
+    const locationObj = await fetchLocation(lookup, config, signal)
     const time = await getTime(config.timeserver, signal)
 
     // note this does not track the user's timezone, just the location's requested
