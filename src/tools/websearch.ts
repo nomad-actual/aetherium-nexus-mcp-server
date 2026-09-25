@@ -18,6 +18,7 @@ async function searchForResults(queryArg: string, config: AetheriumConfig, abort
     const results = await axios.request({
         method: 'get',
         baseURL: config.search.host,
+        url: '/search',
         timeout: config.search.timeout,
         signal: abortSignal,
         headers: {

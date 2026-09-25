@@ -154,11 +154,28 @@ export function lookupStateAbbreviation(stateName: string): string | null {
   return stateMap.get(stateName.trim().toUpperCase()) || null;
 }
 
+// Resolves a user-supplied state (2-letter abbreviation or full name, any case)
+// to the canonical full state name, or null when it is not a recognized US state.
+function resolveStateFullName(stateOrProvince: string): string | null {
+  const trimmed = stateOrProvince.trim();
+  if (!trimmed) return null;
+
+  const byAbbreviation = stateMap.get(trimmed.toUpperCase());
+  if (byAbbreviation) return byAbbreviation;
+
+  const lower = trimmed.toLowerCase();
+  for (const fullName of stateMap.values()) {
+    if (fullName.toLowerCase() === lower) return fullName;
+  }
+
+  return null;
+}
+
 export function closestMatch(locations: LocationResult[], city: string, stateOrProvince?: string): LocationResult | null {
     if (!city) return null;
     if (locations.length === 0) return null;
 
-    const stateFullName = stateOrProvince ? stateMap.get(stateOrProvince.trim().toUpperCase()) : null;
+    const stateFullName = stateOrProvince ? resolveStateFullName(stateOrProvince) : null;
     const lowerCityName = city.toLowerCase();
 
     const likely = locations.filter(location => 
