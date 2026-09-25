@@ -31,7 +31,7 @@ jobs:
       - name: Determine version bump
         id: version
         env:
-          BRANCH: ${{ github.event.pull_request.head_ref }}
+          BRANCH: ${{ github.head_ref }}
         run: |
           # Bump from the branch name (major/, fix/, hotfix/, else minor).
           SOURCE="$BRANCH"
