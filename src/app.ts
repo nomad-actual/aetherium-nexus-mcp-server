@@ -74,16 +74,14 @@ app.post('/mcp', async (req: Request, res: Response) => {
 // SSE notifications not supported in stateless mode
 app.get('/mcp', async (req: Request, res: Response) => {
     logger.info('Received GET MCP request')
-    res.writeHead(405).end(
-        JSON.stringify({
-            jsonrpc: '2.0',
-            error: {
-                code: -32000,
-                message: 'Method not allowed.',
-            },
-            id: null,
-        })
-    )
+    res.status(405).json({
+        jsonrpc: '2.0',
+        error: {
+            code: -32000,
+            message: 'Method not allowed.',
+        },
+        id: null,
+    })
 })
 
 
@@ -91,16 +89,14 @@ app.get('/mcp', async (req: Request, res: Response) => {
 // Session termination not needed in stateless mode
 app.delete('/mcp', async (req: Request, res: Response) => {
     logger.info('Received DELETE MCP request')
-    res.writeHead(405).end(
-        JSON.stringify({
-            jsonrpc: '2.0',
-            error: {
-                code: -32000,
-                message: 'Method not allowed.',
-            },
-            id: null,
-        })
-    )
+    res.status(405).json({
+        jsonrpc: '2.0',
+        error: {
+            code: -32000,
+            message: 'Method not allowed.',
+        },
+        id: null,
+    })
 })
 
 app.get('/health', (req: Request, res: Response) => {
