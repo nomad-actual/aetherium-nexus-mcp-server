@@ -124,7 +124,7 @@ export function buildWebSearchTool(): ToolsDef {
                     .trim()
                     .nonempty()
             },
-            attributes: {
+            annotations: {
                 readOnlyHint: true,
                 openWorldHint: true,
             }

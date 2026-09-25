@@ -34,7 +34,7 @@ export function buildWebScraperTool(): ToolsDef {
                     .url({ message: 'Enter a valid URL' })
                     .nonempty(),
             },
-            attributes: {
+            annotations: {
                 readOnlyHint: true,
                 openWorldHint: true,
             },
