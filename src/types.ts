@@ -115,7 +115,6 @@ export type AetheriumConfig = {
             onlyMainContent: boolean,
         },
         basicHtmlReader: {
-            minScore: number,
             minReadableLength: number,
         }
     },
@@ -145,14 +144,6 @@ export type McpToolContent = {
 } | {
     type: 'image',
     image: string, // base64 encoded
-}
-
-export type ScrapeOptions = {
-    maxContentLength: number,
-    minScore: number,
-    minReadableLength: number,
-    timeout: number,
-    signal: AbortSignal,
 }
 
 export type ToolsDef = {

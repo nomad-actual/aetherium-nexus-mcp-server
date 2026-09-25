@@ -12,16 +12,6 @@ function parseMonthStyle(monthStyle: string): UnitStyle {
     }
 }
 
-function toNum(envName: string, def: number) {
-    if (!envName) return def
-
-    const temp = parseInt(envName, 10)
-
-    if (temp === 0) return 0
-
-    return temp || def
-}
-
 let config: AetheriumConfig | null = null;
 
 export function getConfig(): AetheriumConfig {
@@ -92,7 +82,6 @@ export function getConfig(): AetheriumConfig {
                 onlyMainContent: process.env.SCRAPER_CRW_ONLY_MAIN_CONTENT !== 'false',
             },
             basicHtmlReader: {
-                minScore: parseInt(process.env.SCRAPER_BASIC_MIN_SCORE || '', 10) || 20,
                 minReadableLength: parseInt(process.env.SCRAPER_BASIC_MIN_LENGTH || '', 10) || 140,
             }
         },
