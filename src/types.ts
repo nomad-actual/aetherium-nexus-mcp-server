@@ -146,14 +146,6 @@ export type McpToolContent = {
     image: string, // base64 encoded
 }
 
-export type ScrapeOptions = {
-    maxContentLength: number,
-    minScore: number,
-    minReadableLength: number,
-    timeout: number,
-    signal: AbortSignal,
-}
-
 export type ToolsDef = {
     name: string
     config: any

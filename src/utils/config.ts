@@ -12,16 +12,6 @@ function parseMonthStyle(monthStyle: string): UnitStyle {
     }
 }
 
-function toNum(envName: string, def: number) {
-    if (!envName) return def
-
-    const temp = parseInt(envName, 10)
-
-    if (temp === 0) return 0
-
-    return temp || def
-}
-
 let config: AetheriumConfig | null = null;
 
 export function getConfig(): AetheriumConfig {
