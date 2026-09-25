@@ -87,7 +87,7 @@ export function buildPackageTrackingTool(): ToolsDef {
                     )
                     .min(1, 'At least one tracking number is required'),
             },
-            attributes: {
+            annotations: {
                 readOnlyHint: true,
                 openWorldHint: true,
             }

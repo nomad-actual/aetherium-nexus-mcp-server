@@ -33,16 +33,19 @@ src/
     ├── location-db/            # Bundled location database
     ├── promises.ts             # Promise utility helpers
     └── webscraper/             # Web scraping orchestrator
+        ├── webscraper.ts       # Orchestrator (routes to the right scraper)
         ├── CrwScraper.ts       # CRW (Firecrawl-compatible) API client, primary scraper
         ├── BasicHtmlScraper.ts # Local readability-based fallback scraper
-        └── IScraper.ts         # Scraper interface
+        ├── IScraper.ts         # Scraper interface
+        ├── normalizeWhitespace.ts # Whitespace normalization for scraped markdown
+        └── test/               # Unit tests
 ```
 
 ### Key design decisions
 
 - **Native TypeScript execution** — no compilation step, run `.ts` directly with Node.js
 - **Stateless MCP server** — a fresh `McpServer` + `StreamableHTTPServerTransport` is created per request
-- **Tool timeouts** — each tool call gets an `AbortSignal` with configurable timeout (default 10s)
+- **Tool timeouts** — each tool call gets an `AbortSignal` with configurable timeout (default 30s)
 - **Config singleton** — `getConfig()` parses all env vars once and caches the result
 
 ## Available Tools
@@ -142,10 +145,10 @@ npm test
 
 ## CI/CD
 
-A single GitHub Actions workflow (`.github/workflows/release.yml`) creates the release and publishes the Docker image:
+Two GitHub Actions workflows:
 
-- **PR merged into `main`** — the version bump comes from the branch name (`major/` → major, `fix/`/`hotfix/` → patch, anything else → minor). A `vX.Y.Z` tag and GitHub release are created, and the image is pushed to GHCR as `vX.Y.Z` and `latest`.
-- **Direct push to `main`** — the version bump comes from the pushed commit message (`major:` → major, `fix:`/`hotfix:` → patch, anything else → minor). PR merge commits are skipped since the PR event already released them.
+- **`.github/workflows/ci.yml`** — runs the unit tests (`npm test`) on PRs and pushes to `main`.
+- **`.github/workflows/release.yml`** — creates the release and publishes the Docker image, triggered only when a PR is merged into `main`. The version bump comes from the branch name (`major/` → major, `fix/`/`hotfix/` → patch, anything else → minor). A `vX.Y.Z` tag and GitHub release are created, and the image is pushed to GHCR as `vX.Y.Z` and `latest`.
 
 The release version is baked into the image (`MCP_SERVER_VERSION`) and reported by the server. See `docs/AGENTS.md` for details.
 

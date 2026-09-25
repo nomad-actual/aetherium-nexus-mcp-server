@@ -6,7 +6,7 @@
 
 | Detail | Value |
 |--------|-------|
-| Server | aetherium-nexus v1.0.0 |
+| Server | `aetherium-nexus` — `initialize` reports `serverInfo` with `MCP_SERVER_TITLE` (default `Default MCP server`) and `MCP_SERVER_VERSION` (default `dev`) |
 | Transport | Streamable HTTP (JSON-RPC 2.0) |
 | Endpoints | `POST /mcp` (MCP), `GET /health` (health check) |
 | Protocol | MCP SDK |
@@ -310,7 +310,7 @@ Notifications (e.g. `notifications/initialized`) return **202 Accepted** with an
 
 ### `scrape-website`
 
-**Description**: Scrapes a website and returns the primary readable content using Readability parser.
+**Description**: Scrapes a website and returns the primary readable content (CRW scraper primary, local Readability-based HTML fallback).
 
 **Method**: `POST /mcp`
 
@@ -352,17 +352,31 @@ The server behavior is controlled by the `AetheriumConfig` loaded from environme
 |-----------|-------------|
 | `mcpServer.port` | Server listening port |
 | `mcpServer.host` | Server listening host |
-| `mcpServer.title` | MCP server display title |
-| `mcpServer.toolCallRequestTimeout` | Timeout for tool calls |
+| `mcpServer.title` | MCP server display title (also reported as `serverInfo.name`/`title`) |
+| `mcpServer.version` | Version reported in `initialize` |
+| `mcpServer.toolCallRequestTimeout` | Timeout for tool calls (ms, default 30000) |
 | `mcpServer.corsAllowedHosts` | CORS allowed hosts |
+| `mcpServer.corsAllowedOrigins` | CORS allowed origins |
 | `defaultLocation.lat` | Default latitude |
 | `defaultLocation.lon` | Default longitude |
-| `defaultLocation.timezone` | Default timezone |
-| `locale.units` | Temperature/wind units (`metric` or imperial) |
+| `defaultLocation.timezone` | Default timezone (derived from lat/lon via `geo-tz`) |
+| `locale.region` | Locale region (default `en-US`) |
+| `locale.units` | Temperature/wind units (`metric` or `imperial`) |
+| `locale.monthStyle` | Month format (`short`, `long`, `narrow`) |
+| `locale.showWeekday` | Include weekday in date formatting |
+| `locale.is24HourTime` | Use 24-hour time format |
 | `search.host` | SearXNG search engine URL |
-| `search.timeout` | Search request timeout |
+| `search.timeout` | Search request timeout (ms) |
 | `search.maxResults` | Max search results to scrape |
 | `search.contentLimit` | Max content length per page |
+| `scraper.contentLimit` | Max length of scraped page content |
+| `scraper.timeout` | Per-page scrape budget (ms) |
+| `scraper.crw.host` | CRW (Firecrawl-compatible) scraper host; empty → local fallback only |
+| `scraper.crw.apiKey` | CRW API key (hosted API only) |
+| `scraper.crw.renderJs` | Render JS before scraping (`true`/`false`/null = auto) |
+| `scraper.crw.onlyMainContent` | Strip nav/footer/boilerplate before conversion |
+| `scraper.basicHtmlReader.minScore` | Minimum readability score for the local fallback |
+| `scraper.basicHtmlReader.minReadableLength` | Minimum readable content length for the local fallback |
 | `timeserver.host` | NTP server host |
 | `timeserver.port` | NTP server port (default: 123) |
-| `timeserver.timeout` | NTP request timeout |
+| `timeserver.timeout` | NTP request timeout (ms) |
