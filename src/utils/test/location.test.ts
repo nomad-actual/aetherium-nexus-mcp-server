@@ -1,6 +1,6 @@
 import test from 'ava'
 import type { LocationResult } from '../../types.ts'
-import { closestMatch } from '../location.ts'
+import { closestMatch, makeLocationString } from '../location.ts'
 
 function makeLocation(overrides: Partial<LocationResult> = {}): LocationResult {
     return {
@@ -62,4 +62,25 @@ test('closestMatch: returns null when the city matches nothing', (t) => {
 test('closestMatch: returns null for an empty city or empty location list', (t) => {
     t.is(closestMatch(springfields, '', 'CA'), null)
     t.is(closestMatch([], 'Springfield', 'CA'), null)
+})
+
+test('makeLocationString: returns Unknown Location for null', (t) => {
+    t.is(makeLocationString(null), 'Unknown Location')
+})
+
+test('makeLocationString: returns name only when state is missing (no crash)', (t) => {
+    const { state: _state, ...location } = makeLocation()
+    t.is(makeLocationString(location as LocationResult), 'Testville')
+})
+
+test('makeLocationString: returns name only when state is empty', (t) => {
+    t.is(makeLocationString(makeLocation({ state: '' })), 'Testville')
+})
+
+test('makeLocationString: omits state when it duplicates the name case-insensitively', (t) => {
+    t.is(makeLocationString(makeLocation({ name: 'Georgia', state: 'georgia' })), 'Georgia')
+})
+
+test('makeLocationString: joins name and state with a comma', (t) => {
+    t.is(makeLocationString(makeLocation({ name: 'San Francisco', state: 'California' })), 'San Francisco, California')
 })

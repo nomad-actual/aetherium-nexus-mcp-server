@@ -207,8 +207,8 @@ export function makeLocationString(location: LocationResult | null): string {
 
     const { name, state } = location;
 
-    if (name.toLocaleLowerCase() === state.toLocaleLowerCase()) return name;
     if (!state) return name;
+    if (name.toLocaleLowerCase() === state.toLocaleLowerCase()) return name;
 
     return `${name}, ${state}`;
 }
