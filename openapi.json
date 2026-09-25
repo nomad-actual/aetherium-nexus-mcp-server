@@ -427,7 +427,7 @@
             "properties": {
               "name": {
                 "type": "string",
-                "description": "Server name (MCP_SERVER_TITLE, default 'Aetherium Nexus MCP Server')"
+                "description": "Server name (MCP_SERVER_TITLE, default 'Default MCP server')"
               },
               "version": {
                 "type": "string"

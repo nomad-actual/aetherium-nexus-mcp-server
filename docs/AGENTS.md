@@ -40,7 +40,7 @@ Repo root also contains `openapi.json` + `docs/api.md` (generated API docs).
 
 - **Native TypeScript execution**: The project uses `node --experimental-strip-types` to run `.ts` files directly — no build/compile step.
 - **Stateless MCP server**: A fresh `McpServer` + `StreamableHTTPServerTransport` is created per POST `/mcp` request. GET and DELETE on `/mcp` return 405.
-- **Tool timeout**: Each tool call gets an `AbortSignal` via `AbortSignal.timeout(config.mcpServer.toolCallRequestTimeout)` (`src/server/mcp.server.ts:42`), configurable through `TOOL_CALL_TIMEOUT` (default 10,000 ms).
+- **Tool timeout**: Each tool call gets an `AbortSignal` via `AbortSignal.timeout(config.mcpServer.toolCallRequestTimeout)` (`src/server/mcp.server.ts:40`), configurable through `TOOL_CALL_TIMEOUT` (default 30,000 ms).
 - **Config singleton**: `getConfig()` in `src/utils/config.ts` parses all env vars once and caches the result. All code imports from there.
 
 ## Available MCP Tools
@@ -89,7 +89,7 @@ The Dockerfile uses `node:26-alpine3.23`, installs production deps only (`npm ci
 
 | Group | env vars | Controls |
 |-------|----------|----------|
-| MCP Server | `MCP_SERVER_PORT`, `MCP_SERVER_HOST`, `MCP_SERVER_CORS_ALLOWED_ORIGINS`, `MCP_SERVER_CORS_ALLOWED_HOSTS`, `MCP_SERVER_TITLE`, `TOOL_CALL_TIMEOUT` | Port (3000), host (localhost), CORS lists (`\|`-separated), title, tool timeout ms (10000) |
+| MCP Server | `MCP_SERVER_PORT`, `MCP_SERVER_HOST`, `MCP_SERVER_CORS_ALLOWED_ORIGINS`, `MCP_SERVER_CORS_ALLOWED_HOSTS`, `MCP_SERVER_TITLE`, `MCP_SERVER_VERSION`, `TOOL_CALL_TIMEOUT` | Port (3000), host (localhost), CORS lists (`\|`-separated), title, reported version (dev), tool timeout ms (30000) |
 | Location | `DEFAULT_LOCATION_LAT`, `DEFAULT_LOCATION_LON` | Default lat/lon (Los Angeles); timezone derived via `geo-tz` |
 | NTP | `TIMESERVER_HOST`, `TIMESERVER_PORT`, `TIMESERVER_TIMEOUT` | Time server (time.nist.gov:123, 200 ms) |
 | Locale | `LOCALE_REGION`, `LOCALE_UNITS`, `LOCALE_MONTH`, `LOCALE_SHOWWEEKDAY`, `IS_24_HOUR_TIME` | Region (en-US), units, month style, weekday, 24h time |
@@ -123,7 +123,7 @@ curl -s -X POST http://localhost:3000/mcp \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"smoke-test","version":"0.0.0"}}}'
 ```
 
-A healthy server responds with an SSE `message` event containing `serverInfo: { name: "Aetherium Nexus MCP Server", ... }`.
+A healthy server responds with an SSE `message` event containing `serverInfo: { name, version, title }` — `name` and `title` are `MCP_SERVER_TITLE` and `version` is `MCP_SERVER_VERSION` (with `.env.example` values: `Simply Lovely MCP Server` / `dev`).
 
 ## Adding a new tool
 
@@ -165,7 +165,7 @@ A healthy server responds with an SSE `message` event containing `serverInfo: { 
 
 - **`CallToolResult` is NOT exported from `src/types.ts`** — it's only imported locally there for the `ToolsDef` type. Always import `CallToolResult` directly from `@modelcontextprotocol/sdk/types.d.ts`. This is a recurring gotcha that causes `TS2459` errors.
 - **`getConfig()` returns a cached singleton** — the config object is memoized on first call (`src/utils/config.ts:27`). Never mutate the returned object. If you need a modified copy (e.g., overriding `limitResults`), spread it into a new object first.
-- **Always check `signal.throwIfAborted()`** early in your handler. The MCP server wraps each tool call with `AbortSignal.timeout(config.mcpServer.toolCallRequestTimeout)` (default 10s). Long-running work should also pass the signal along to downstream calls when possible.
+- **Always check `signal.throwIfAborted()`** early in your handler. The MCP server wraps each tool call with `AbortSignal.timeout(config.mcpServer.toolCallRequestTimeout)` (default 30s). Long-running work should also pass the signal along to downstream calls when possible.
 - **No build step** — the project runs `.ts` files natively via `node --experimental-strip-types`. TypeScript is checked with `npx tsc --noEmit`, not compiled.
 
 ## Code Style
@@ -187,9 +187,9 @@ Applies to all code, comments, commit messages, and replies.
 - Blank lines between logical blocks. Let the reader breathe.
 - Comments: small `//` line comments (codebase idiom, not JSDoc) explaining *what* a block does and *why*. Use examples when possible. ASCII drawings for complete systems. JSDoc only for public contracts (see `src/utils/promises.ts`).
 - Visibility: fields and functions are private by default (module scope or `private`). Widening `private` to public is a breaking design shift — ask for explicit approval first.
-- Program to levels of abstraction. Low-level mechanics (raw HTTP, HTML walking, vector storage) live in dedicated driver layers behind interfaces (`IScraper`, `datastore.ts`). Upper layers work with domain concepts, never raw details.
-- Strict layering: `app.ts` → `server/` → `tools/` → `utils/` / `rag/`. Each layer talks only to its immediate neighbor below. Never punch through (a tool must not call OpenSearch directly — route via `rag/search.ts`).
-  - Known violations — do not add more, do not refactor without approval: `rag/reset.ts` constructs `OpenSearchRagDatastore` directly (bypasses the `getRagDatastore()` factory); `tools/time.ts` exports a utility imported by other tools; the Ollama client is duplicated in `rag/search.ts` and `rag/indexer.ts`.
+- Program to levels of abstraction. Low-level mechanics (raw HTTP, HTML walking) live in dedicated driver layers behind interfaces (`IScraper`). Upper layers work with domain concepts, never raw details.
+- Strict layering: `app.ts` → `server/` → `tools/` → `utils/`. Each layer talks only to its immediate neighbor below. Never punch through (a tool must not call the scraper drivers directly — route via `utils/webscraper/webscraper.ts`).
+  - Known violation — do not add more, do not refactor without approval: `tools/time.ts` exports a utility (`getTime`) imported by other tools.
 - Always use `{}`, even on a one-line `if`. (Existing braceless guards: fix incrementally, only when touching the file.)
 - Don't touch unrelated blocks. Don't add comments to code you did not create or modify. Minimize changed lines.
 
@@ -214,18 +214,16 @@ Before writing a fix, write the failing reproduction first — a failing unit te
 
 ## CI/CD
 
-`.github/workflows/release.yml` is the only CI workflow. It creates the semantic release and publishes the Docker image in one run:
+Two workflows: `.github/workflows/ci.yml` runs `npm test` on PRs and pushes to `main`. `.github/workflows/release.yml` creates the semantic release and publishes the Docker image in one run:
 
-- **trigger**: PR merged into `main`, or direct push to `main` (PR merge commits are skipped on push — the PR event already released them)
+- **trigger**: PR merged into `main` only (the push event is intentionally not used — a push-based guard cannot reliably dedupe squash/rebase merges)
 - **version source**: git tags (`vX.Y.Z`) — do not edit `package.json`'s `version` for releases; it is not kept in sync
-- **bump detection** (first match wins):
-  1. **Merged PR**: branch prefix — `major/` → major, `fix/`/`hotfix/` → patch, anything else (`feat/`, `chore/`, `docs/`, `test/`, no prefix) → minor
-  2. **Direct push**: pushed commit's subject prefix — `major:` → major, `fix:`/`hotfix:` → patch, anything else → minor
+- **bump detection**: branch prefix — `major/` → major, `fix/`/`hotfix/` → patch, anything else (`feat/`, `chore/`, `docs/`, `test/`, no prefix) → minor
 
-  | Example branch / commit subject | Bump |
-  |---------------------------------|------|
-  | `major/drop-node-24` / `major: drop node 24` | major |
-  | `fix/scraper-timeout` / `fix: scraper timeout` | patch |
+  | Example branch | Bump |
+  |----------------|------|
+  | `major/drop-node-24` | major |
+  | `fix/scraper-timeout` | patch |
   | `feat/weather-alerts` / `chore: deps` / no prefix | minor |
 
 - Creates a `vX.Y.Z` tag + GitHub release (notes auto-generated via `gh release create --generate-notes`), then builds the image and pushes it to GHCR as `vX.Y.Z` and `latest`. If the tag already exists the release is skipped but the image is still rebuilt.
@@ -236,4 +234,3 @@ Before writing a fix, write the failing reproduction first — a failing unit te
 
 - **Colons are INVALID in git branch names** — use slashes for branches (`fix/scraper-timeout`, `feat/weather-alerts`).
 - Prefix the **branch** with `major/`, `fix/`, or `hotfix/` to control the version bump; everything else bumps minor.
-- For **direct pushes to `main`**, the pushed commit's subject prefix (`major: ...`, `fix: ...`, `hotfix: ...`) controls the bump.

@@ -2,7 +2,7 @@
   "name": "aetherium-nexus",
   "version": "1.0.0",
   "description": "",
-  "main": "app.ts",
+  "main": "src/app.ts",
   "type": "module",
   "scripts": {
     "test": "ava",
