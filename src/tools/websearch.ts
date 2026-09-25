@@ -2,7 +2,7 @@ import type { CallToolResult } from '@modelcontextprotocol/sdk/types.d.ts';
 import axios from 'axios';
 import z from 'zod';
 
-import type { AetheriumConfig, ScrapeOptions, ToolsDef } from '../types.ts';
+import type { AetheriumConfig, ToolsDef } from '../types.ts';
 import { getConfig } from '../utils/config.ts';
 import { doWebScrape } from '../utils/webscraper/webscraper.ts';
 
@@ -61,15 +61,6 @@ export async function search(args: any, config: AetheriumConfig, signal: AbortSi
     const searchDuration = ((Date.now() - start) / 1000)
 
     const filteredResults = filterSites(searchResults, config)
-
-
-    const scrapeOpts: ScrapeOptions = {
-        maxContentLength: config.search.contentLimit,
-        minScore: 20,
-        minReadableLength: 140,
-        timeout: config.search.timeout,
-        signal
-    }
 
     const scrapePromises = filteredResults.map(result => doWebScrape(result.url, config, signal))
     const promisesResults = await Promise.allSettled(scrapePromises)

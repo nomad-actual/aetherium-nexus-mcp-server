@@ -52,15 +52,6 @@ export function findNearestCity(lat: number, lon: number): City | null {
   }
 
 
-export function findCitiesWithinRadius(lat: number, lon: number, radiusKm: number): City[] {
-    return citiesDb.filter((city) => {
-        const cityLat = parseFloat(city.lat);
-        const cityLng = parseFloat(city.lng);
-        const distance = haversineDistance(lat, lon, cityLat, cityLng);
-        return distance <= radiusKm;
-    });
-}
-
 export async function searchLocation(query: string, { limit = 10, language = 'en' }, timeout: number, signal: AbortSignal): Promise<LocationResult[]> {
 
     const url = 'https://geocoding-api.open-meteo.com/v1/search'
@@ -149,10 +140,6 @@ const stateMap = new Map([
   ['WI', 'Wisconsin'],
   ['WY', 'Wyoming']
 ]);
-
-export function lookupStateAbbreviation(stateName: string): string | null {
-  return stateMap.get(stateName.trim().toUpperCase()) || null;
-}
 
 // Resolves a user-supplied state (2-letter abbreviation or full name, any case)
 // to the canonical full state name, or null when it is not a recognized US state.

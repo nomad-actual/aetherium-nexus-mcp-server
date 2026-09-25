@@ -32,6 +32,7 @@ async function trackPakages(args: { packages: string[] }, config: AetheriumConfi
     }
 
     const results: any[] = []
+    let foundPackages = 0
 
     for (const p of packages) {
         const trackingInfo = trackOnePackage(p, config)
@@ -57,13 +58,14 @@ async function trackPakages(args: { packages: string[] }, config: AetheriumConfi
             continue;
         }
 
+        foundPackages++
         results.push({ type: 'text', text: JSON.stringify(trackingContent) })
         results.push(...scraped)
     }
 
     return {
         content: [
-            { type: 'text', text: `Found ${packages.size} packages` },
+            { type: 'text', text: `Found ${foundPackages} of ${packages.size} packages` },
             ...results,
         ]
     }
