@@ -13,14 +13,12 @@ export async function getTime(config: NtpConfig, abortSignal: AbortSignal): Prom
 
         const packet = await abort(client.syncTime(), abortSignal, 'Global timeout reached')
 
-        // will need better logging levels (aka pino)
         logger.info(`Time retrieved ${packet.time}`)
 
         return packet.time
     } catch (err) {
-        // log error return invalid date
-        console.error('Error retrieving time', err)
-        return new Date(0)
+        logger.warn({ err }, 'NTP time retrieval failed, falling back to local system time')
+        return new Date()
     }
 }
 
