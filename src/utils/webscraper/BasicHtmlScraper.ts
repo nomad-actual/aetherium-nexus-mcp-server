@@ -64,71 +64,84 @@ export default class BasicHtmlScraper implements IScraper {
 
         const resources = buildJsdomResources(url, Math.min(config.scraper.timeout, DEFAULT_TIMEOUT))
 
-        const dom = await abort(
-            JSDOM.fromURL(url, { virtualConsole, resources }),
-            signal,
-            'JSDOM aborted',
-        )
+        const domPromise = JSDOM.fromURL(url, { virtualConsole, resources })
 
-        const parseStart = Date.now()
-        logger.debug(`[BasicHtmlScraper] HTML downloaded, trimming DOM before Readability`)
-
-        trimInPlace(dom.window.document)
-        logger.debug(`[BasicHtmlScraper] DOM trimmed, running Readability`)
-
-        // Pass configurable thresholds to Readability:
-        //   charThreshold: minimum character count needed for a result (from config.minReadableLength)
-        const reader = new Readability(dom.window.document, {
-            charThreshold: config.scraper.basicHtmlReader.minReadableLength,
-            debug: false,
-            maxElemsToParse: 250_000,
-        } as Record<string, unknown>)
-
-        const html = reader.parse()
-        if (!html) {
-            logger.error(`No content from ${url} to parse`)
-            return null
-        }
-
-        const parseDuration = ((Date.now() - parseStart) / 1000).toFixed(2)
-        const totalDuration = ((Date.now() - startTime) / 1000).toFixed(2)
-        logger.debug(`[BasicHtmlScraper] Readability complete (${parseDuration}s) for ${url}`)
-
-        const {
-            title,
-            lang,
-            textContent,
-            siteName = '',
-            publishedTime = '',
-        } = html
-
-        // cleanup content
-        let processedTextContent = normalizeWhitespace(textContent || '')
-
-        const maxContentLength = config.scraper.contentLimit
-        if (processedTextContent.length > maxContentLength) {
-            logger.debug(
-                `Truncating content to sentence closest to ${maxContentLength} characters`
+        let dom: JSDOM
+        try {
+            dom = await abort(domPromise, signal, 'JSDOM aborted')
+        } catch (err) {
+            // If the outer signal aborts first, the fetch may still settle; close
+            // that window once it does so the in-flight JSDOM instance doesn't leak.
+            void domPromise.then(
+                (lateDom) => lateDom.window.close(),
+                () => undefined,
             )
-
-            // find the end of the sentence closest to maxContentLength characters
-            const nextPos = processedTextContent.indexOf('.', maxContentLength)
-            const truncIdx = nextPos === -1 ? maxContentLength : nextPos + 1
-
-            processedTextContent = processedTextContent.substring(0, truncIdx)
+            throw err
         }
 
-        const altSiteName = capitalizeFirstLetter(new URL(url).hostname)
+        try {
+            const parseStart = Date.now()
+            logger.debug(`[BasicHtmlScraper] HTML downloaded, trimming DOM before Readability`)
 
-        return [{
-            url,
-            title: title || '',
-            lang: lang || '',
-            content: processedTextContent,
-            siteName: siteName || altSiteName,
-            publishedTime: publishedTime || 'Published Date not found',
-            scrapeDuration: totalDuration,
-        }]
+            trimInPlace(dom.window.document)
+            logger.debug(`[BasicHtmlScraper] DOM trimmed, running Readability`)
+
+            // Pass configurable thresholds to Readability:
+            //   charThreshold: minimum character count needed for a result (from config.minReadableLength)
+            const reader = new Readability(dom.window.document, {
+                charThreshold: config.scraper.basicHtmlReader.minReadableLength,
+                debug: false,
+                maxElemsToParse: 250_000,
+            } as Record<string, unknown>)
+
+            const html = reader.parse()
+            if (!html) {
+                logger.error(`No content from ${url} to parse`)
+                return null
+            }
+
+            const parseDuration = ((Date.now() - parseStart) / 1000).toFixed(2)
+            const totalDuration = ((Date.now() - startTime) / 1000).toFixed(2)
+            logger.debug(`[BasicHtmlScraper] Readability complete (${parseDuration}s) for ${url}`)
+
+            const {
+                title,
+                lang,
+                textContent,
+                siteName = '',
+                publishedTime = '',
+            } = html
+
+            // cleanup content
+            let processedTextContent = normalizeWhitespace(textContent || '')
+
+            const maxContentLength = config.scraper.contentLimit
+            if (processedTextContent.length > maxContentLength) {
+                logger.debug(
+                    `Truncating content to sentence closest to ${maxContentLength} characters`
+                )
+
+                // find the end of the sentence closest to maxContentLength characters
+                const nextPos = processedTextContent.indexOf('.', maxContentLength)
+                const truncIdx = nextPos === -1 ? maxContentLength : nextPos + 1
+
+                processedTextContent = processedTextContent.substring(0, truncIdx)
+            }
+
+            const altSiteName = capitalizeFirstLetter(new URL(url).hostname)
+
+            return [{
+                url,
+                title: title || '',
+                lang: lang || '',
+                content: processedTextContent,
+                siteName: siteName || altSiteName,
+                publishedTime: publishedTime || 'Published Date not found',
+                scrapeDuration: totalDuration,
+            }]
+        } finally {
+            dom.window.close()
+        }
     }
 
     async buildResult(contents: ReadableWebpageContent[]): Promise<McpToolContent[]> {
