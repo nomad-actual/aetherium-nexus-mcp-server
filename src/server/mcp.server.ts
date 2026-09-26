@@ -1,4 +1,4 @@
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import { McpServer, type ToolCallback } from '@modelcontextprotocol/sdk/server/mcp.js'
 import {
     buildCurrentWeatherTool,
     buildForecastTool,
@@ -33,13 +33,21 @@ export function buildMCPServer(config: AetheriumConfig): McpServer {
 
     toolsDef.forEach((tool) => {
         // seems like can pass handler for progress updates as well
+        // ToolsDef.config is typed `any`, so registerTool infers the zero-arg
+        // ToolCallback type; the SDK actually invokes schema-registered tools as
+        // (args, extra), so the two-arg handler is cast to the SDK's callback type.
         mcpServerInstance.registerTool(
             tool.name,
             tool.config,
-            async (args: any) => {
-                const abortSignal = AbortSignal.timeout(config.mcpServer.toolCallRequestTimeout)
+            (async (args: any, extra: { signal: AbortSignal }) => {
+                // Combine the SDK's request signal (fires on client disconnect/cancel)
+                // with the global per-call timeout so either one aborts the handler.
+                const abortSignal = AbortSignal.any([
+                    extra.signal,
+                    AbortSignal.timeout(config.mcpServer.toolCallRequestTimeout),
+                ])
                 return tool.handler(args, abortSignal)
-            })
+            }) as ToolCallback)
     })
 
     // todo add resources and such later?
