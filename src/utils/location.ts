@@ -7,14 +7,24 @@ import path from 'node:path';
 
 // sorted by lat, lon
 let citiesDb = [] as City[]
+// Numeric coordinates, parallel to citiesDb and precomputed at load time so
+// findNearestCity never re-parses the lat/lng strings on every call.
+let cityCoords: { lat: number; lng: number }[] = []
+let dbLoaded = false
 
 function loadDb() {
     const fp = path.join(import.meta.dirname, 'location-db','world_cities_15000_(including_all_states_and_counties).json')
     const raw = readFileSync(fp, { encoding: 'utf8' });
     citiesDb = JSON.parse(raw)
+    cityCoords = citiesDb.map((city) => ({ lat: Number(city.lat), lng: Number(city.lng) }))
+    dbLoaded = true
 }
 
-loadDb()
+// Loaded lazily so importing this module doesn't block startup on the ~5 MB
+// JSON read; the first lookup pays the cost instead.
+function ensureDbLoaded() {
+    if (!dbLoaded) loadDb()
+}
 
 function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371; // Earth radius in kilometers
@@ -32,19 +42,18 @@ function toRadians(degrees: number): number {
 }
 
 export function findNearestCity(lat: number, lon: number): City | null {
+    ensureDbLoaded()
     if (!citiesDb.length) return null;
 
     let nearestCity: City | null = null;
     let minDistance = Infinity;
 
-    for (const city of citiesDb) {
-      const cityLat = parseFloat(city.lat)
-      const cityLng = parseFloat(city.lng)
-      const distance = haversineDistance(lat, lon, cityLat, cityLng)
+    for (let i = 0; i < citiesDb.length; i++) {
+      const distance = haversineDistance(lat, lon, cityCoords[i].lat, cityCoords[i].lng)
 
       if (distance < minDistance) {
         minDistance = distance
-        nearestCity = city
+        nearestCity = citiesDb[i]
       }
     }
 
