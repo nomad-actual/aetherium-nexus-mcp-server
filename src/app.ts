@@ -36,7 +36,9 @@ app.post('/mcp', async (req: Request, res: Response) => {
     // when multiple clients connect concurrently.
 
     try {
-        logger.info(req)
+        // Log only what identifies the request; the full request object
+        // carries every header (credentials, cookies) and must not go to logs.
+        logger.info({ method: req.method, path: req.path }, 'MCP request')
 
         const server = buildMCPServer(config)
 
