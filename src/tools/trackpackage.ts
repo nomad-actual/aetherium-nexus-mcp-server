@@ -17,7 +17,9 @@ function trackOnePackage(packageNumber: string, config: AetheriumConfig): Tracki
 }
 
 
-async function trackPakages(args: { packages: string[] }, config: AetheriumConfig, abortSignal: AbortSignal): Promise<CallToolResult> {
+type ScrapeFn = (url: string, config: AetheriumConfig, signal: AbortSignal) => Promise<McpToolContent[]>
+
+export async function trackPakages(args: { packages: string[] }, config: AetheriumConfig, abortSignal: AbortSignal, scrape: ScrapeFn = doWebScrape): Promise<CallToolResult> {
     const packages = new Set(args.packages || [])
 
     if (packages.size === 0) {
@@ -34,33 +36,43 @@ async function trackPakages(args: { packages: string[] }, config: AetheriumConfi
     const results: any[] = []
     let foundPackages = 0
 
-    for (const p of packages) {
-        const trackingInfo = trackOnePackage(p, config)
+    // Scrape all packages concurrently so the total is bounded by the slowest
+    // single scrape (~2 x scraper.timeout) instead of the sum of all scrapes,
+    // which for several packages always exceeded the tool call timeout.
+    const settled = await Promise.allSettled(
+        [...packages].map(async (p) => {
+            const trackingInfo = trackOnePackage(p, config)
 
-        if (!trackingInfo || !trackingInfo.trackingUrl) {
-            // no drama at all, just log it
-            logger.info({ result: p, message: `No tracking information found for ${p}` })
-            continue;
-        }
+            if (!trackingInfo || !trackingInfo.trackingUrl) {
+                // no drama at all, just log it
+                logger.info({ result: p, message: `No tracking information found for ${p}` })
+                return null
+            }
 
-        const urlToScrape = trackingInfo.trackingUrl.replace('%s', trackingInfo.trackingNumber)
+            const urlToScrape = trackingInfo.trackingUrl.replace('%s', trackingInfo.trackingNumber)
 
-        const trackingContent = {
-            trackingNumber: trackingInfo.trackingNumber,
-            courier: trackingInfo.courier,
-            name: trackingInfo.name,
-        }
+            const trackingContent = {
+                trackingNumber: trackingInfo.trackingNumber,
+                courier: trackingInfo.courier,
+                name: trackingInfo.name,
+            }
 
-        const scraped: McpToolContent[] = await doWebScrape(urlToScrape, config, abortSignal)
+            const scraped: McpToolContent[] = await scrape(urlToScrape, config, abortSignal)
 
-        if (scraped.length === 0) {
-            logger.info({ result: p, message: `No tracking content found at ${urlToScrape}` })
-            continue;
-        }
+            if (scraped.length === 0) {
+                logger.info({ result: p, message: `No tracking content found at ${urlToScrape}` })
+                return null
+            }
 
+            return { trackingContent, scraped }
+        }),
+    )
+
+    for (const outcome of settled) {
+        if (outcome.status !== 'fulfilled' || outcome.value === null) continue
         foundPackages++
-        results.push({ type: 'text', text: JSON.stringify(trackingContent) })
-        results.push(...scraped)
+        results.push({ type: 'text', text: JSON.stringify(outcome.value.trackingContent) })
+        results.push(...outcome.value.scraped)
     }
 
     return {
