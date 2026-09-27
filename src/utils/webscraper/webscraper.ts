@@ -3,6 +3,7 @@ import logger from '../logger.ts';
 import BasicHtmlScraper from './BasicHtmlScraper.ts';
 import CrwScraper from './CrwScraper.ts';
 import { abortTimeout } from '../promises.ts';
+import { assertFetchableUrl } from './ssrf.ts';
 
 function getScrapers(url: string) {
     return [
@@ -12,6 +13,14 @@ function getScrapers(url: string) {
 }
 
 export async function doWebScrape(url: string, config: AetheriumConfig, signal: AbortSignal): Promise<McpToolContent[]> {
+    try {
+        await assertFetchableUrl(url)
+    } catch (err) {
+        const message = err instanceof Error ? err.message : String(err)
+        logger.warn(`[Scraper] ${message}`)
+        throw err
+    }
+
     const scrapers = getScrapers(url)
 
     const startTime = Date.now();
