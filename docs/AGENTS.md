@@ -94,7 +94,7 @@ The Dockerfile uses `node:26-alpine3.23`, installs production deps only (`npm ci
 | NTP | `TIMESERVER_HOST`, `TIMESERVER_PORT`, `TIMESERVER_TIMEOUT` | Time server (time.nist.gov:123, 200 ms) |
 | Locale | `LOCALE_REGION`, `LOCALE_UNITS`, `LOCALE_MONTH`, `LOCALE_SHOWWEEKDAY`, `IS_24_HOUR_TIME` | Region (en-US), units, month style, weekday, 24h time |
 | Search | `SEARCH_HOST`, `SEARCH_TIMEOUT`, `SEARCH_PAGE_CONTENT_LIMIT`, `SEARCH_MAX_RESULTS` | SearXNG host, timeout ms, content limit, max results |
-| Scraper | `SCRAPER_CONTENT_LIMIT`, `SCRAPER_REQUEST_TIMEOUT`, `SCRAPER_CRW_HOST`, `SCRAPER_CRW_API_KEY`, `SCRAPER_CRW_RENDER_JS`, `SCRAPER_CRW_ONLY_MAIN_CONTENT`, `SCRAPER_BASIC_MIN_LENGTH` | Content limits, timeouts, CRW (Firecrawl-compatible) host/key/render options, min readable content length |
+| Scraper | `SCRAPER_CONTENT_LIMIT`, `SCRAPER_REQUEST_TIMEOUT`, `SCRAPER_CONNECT_TIMEOUT`, `SCRAPER_MAX_CONCURRENT`, `SCRAPER_CRW_HOST`, `SCRAPER_CRW_API_KEY`, `SCRAPER_CRW_RENDER_JS`, `SCRAPER_CRW_ONLY_MAIN_CONTENT`, `SCRAPER_BASIC_MIN_LENGTH` | Content limits, request timeout, connect timeout ms (2000), max in-flight scrapes (10), CRW (Firecrawl-compatible) host/key/render options, min readable content length |
 
 ## Testing
 
@@ -167,6 +167,7 @@ A healthy server responds with an SSE `message` event containing `serverInfo: { 
 - **`getConfig()` returns a cached singleton** — the config object is memoized on first call (`src/utils/config.ts:27`). Never mutate the returned object. If you need a modified copy (e.g., overriding `limitResults`), spread it into a new object first.
 - **Always check `signal.throwIfAborted()`** early in your handler. The MCP server wraps each tool call with `AbortSignal.timeout(config.mcpServer.toolCallRequestTimeout)` (default 30s). Long-running work should also pass the signal along to downstream calls when possible.
 - **No build step** — the project runs `.ts` files natively via `node --experimental-strip-types`. TypeScript is checked with `npx tsc --noEmit`, not compiled.
+- **jsdom v30 ignores a custom `fetch` in `resources`** — `createResourceSettings` only reads `userAgent`, `dispatcher`, and `interceptors`. A timeout wired to a custom fetch silently does nothing; timeouts belong on the shared undici dispatcher (`src/utils/webscraper/dispatcher.ts`). Passing a `resources` object also turns on subresource (CSS/image) loading through that dispatcher.
 
 ## Code Style
 

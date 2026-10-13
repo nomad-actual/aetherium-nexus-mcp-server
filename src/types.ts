@@ -108,6 +108,8 @@ export type AetheriumConfig = {
     scraper: {
         contentLimit: number,
         timeout: number,
+        connectTimeout: number,
+        maxConcurrent: number,
         crw: {
             host: string,
             apiKey: string,

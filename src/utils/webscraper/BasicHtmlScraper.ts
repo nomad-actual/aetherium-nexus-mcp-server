@@ -10,24 +10,20 @@ const SHOW_ELEMENT = 1
 const FILTER_ACCEPT = 1
 const FILTER_REJECT = 2
 import { abort } from '../promises.ts'
-import { fetch as undiciFetch } from 'undici'
 import { normalizeWhitespace } from './normalizeWhitespace.ts'
+import { getScrapeDispatcher } from './dispatcher.ts'
 
-const DEFAULT_TIMEOUT = 10_000
+const USER_AGENT = 'Mozilla/5.0 (compatible; AetheriumScraper)'
 
-function buildJsdomResources(url: string, timeoutMs: number) {
+function buildJsdomResources(url: string) {
     if (!/^https?:/i.test(url)) return undefined
 
-    const controller = new AbortController()
-    const timer = setTimeout(() => controller.abort(new Error(`JSDOM fetch timeout after ${timeoutMs}ms`)), timeoutMs)
-    controller.signal.addEventListener('abort', () => clearTimeout(timer), { once: true })
-
-    const fetchWithTimeout = (info: string | URL, init: Record<string, unknown> = {}) =>
-        undiciFetch(info, { signal: controller.signal, ...init } as Parameters<typeof undiciFetch>[1])
-
+    // jsdom v30 routes the document and every subresource (CSS, images) through
+    // this dispatcher, so its socket timeouts bound all of them. Note: a custom
+    // `fetch` in this object is ignored by jsdom v30 — never wire timeouts there.
     return {
-        userAgent: 'Mozilla/5.0 (compatible; AetheriumScraper)',
-        fetch: fetchWithTimeout,
+        userAgent: USER_AGENT,
+        dispatcher: getScrapeDispatcher(),
     }
 }
 
@@ -62,7 +58,7 @@ export default class BasicHtmlScraper implements IScraper {
             logger.error({ message: 'JSDOM parse error (non-fatal)', err })
         })
 
-        const resources = buildJsdomResources(url, Math.min(config.scraper.timeout, DEFAULT_TIMEOUT))
+        const resources = buildJsdomResources(url)
 
         const domPromise = JSDOM.fromURL(url, { virtualConsole, resources })
 

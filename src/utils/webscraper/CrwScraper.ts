@@ -4,6 +4,7 @@ import { capitalizeFirstLetter } from '../formatter.ts'
 import logger from '../logger.ts'
 import { fetch as undiciFetch } from 'undici'
 import { normalizeWhitespace } from './normalizeWhitespace.ts'
+import { getScrapeDispatcher } from './dispatcher.ts'
 
 type CrwScrapeResponse = {
     success: boolean
@@ -58,6 +59,9 @@ export default class CrwScraper implements IScraper {
             headers,
             body: JSON.stringify(body),
             signal,
+            // Socket timeouts so a stalled CRW host cannot hold a socket
+            // forever after the per-scraper budget abandons this fetch.
+            dispatcher: getScrapeDispatcher(),
         })
 
         if (!resp.ok) {
