@@ -1,5 +1,10 @@
+// Small explicit limit so the tests stay fast. Must be set before the first
+// getConfig() call in this worker.
+process.env.SCRAPER_MAX_CONCURRENT = '3'
+
 import test from 'ava'
-import { MAX_CONCURRENT_SCRAPES, withScrapeSlot } from '../scrapeSlots.ts'
+import { getConfig } from '../../config.ts'
+import { withScrapeSlot } from '../scrapeSlots.ts'
 
 function sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms))
@@ -8,7 +13,10 @@ function sleep(ms: number): Promise<void> {
 // The slot state is module-global (a process-wide cap), so these tests must
 // not run concurrently with each other.
 
-test.serial('withScrapeSlot bounds concurrency at MAX_CONCURRENT_SCRAPES', async (t) => {
+test.serial('withScrapeSlot bounds concurrency at the configured limit', async (t) => {
+    const limit = getConfig().scraper.maxConcurrent
+    t.is(limit, 3, 'the SCRAPER_MAX_CONCURRENT env var reached the config')
+
     let active = 0
     let peak = 0
 
@@ -20,17 +28,17 @@ test.serial('withScrapeSlot bounds concurrency at MAX_CONCURRENT_SCRAPES', async
             active--
         })
 
-    const workers = Array.from({ length: MAX_CONCURRENT_SCRAPES + 3 }, () => worker())
+    const workers = Array.from({ length: limit + 3 }, () => worker())
     await Promise.allSettled(workers)
 
-    t.true(peak <= MAX_CONCURRENT_SCRAPES, `peak concurrency was ${peak}`)
+    t.true(peak <= limit, `peak concurrency was ${peak}`)
     t.true(peak > 1, 'slots actually overlapped')
 })
 
 test.serial('withScrapeSlot serves waiters in FIFO order', async (t) => {
     // Hold every permit, then queue two waiters and free the permits.
     const releaseHolders: Array<() => void> = []
-    const holders = Array.from({ length: MAX_CONCURRENT_SCRAPES }, () =>
+    const holders = Array.from({ length: getConfig().scraper.maxConcurrent }, () =>
         withScrapeSlot(async () => {
             await new Promise<void>((resolve) => releaseHolders.push(resolve))
         }),
@@ -63,7 +71,7 @@ test.serial('withScrapeSlot releases the permit when fn rejects', async (t) => {
     // If the permit leaked, the fill below could not reach full concurrency.
     let active = 0
     let peak = 0
-    const fill = Array.from({ length: MAX_CONCURRENT_SCRAPES }, () =>
+    const fill = Array.from({ length: getConfig().scraper.maxConcurrent }, () =>
         withScrapeSlot(async () => {
             active++
             peak = Math.max(peak, active)
@@ -72,5 +80,5 @@ test.serial('withScrapeSlot releases the permit when fn rejects', async (t) => {
         }),
     )
     await Promise.all(fill)
-    t.is(peak, MAX_CONCURRENT_SCRAPES, 'all permits are free after a rejection')
+    t.is(peak, getConfig().scraper.maxConcurrent, 'all permits are free after a rejection')
 })

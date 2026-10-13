@@ -75,6 +75,8 @@ export function getConfig(): AetheriumConfig {
         scraper: {
             contentLimit: parseInt(process.env.SCRAPER_CONTENT_LIMIT || '', 10) || 100_000,
             timeout: parseInt(process.env.SCRAPER_REQUEST_TIMEOUT || '', 10) || 15_000,
+            // A limit below 1 would deadlock: every scrape would wait forever.
+            maxConcurrent: Math.max(1, parseInt(process.env.SCRAPER_MAX_CONCURRENT || '', 10) || 10),
             crw: {
                 host: process.env.SCRAPER_CRW_HOST || '',
                 apiKey: process.env.SCRAPER_CRW_API_KEY || '',
