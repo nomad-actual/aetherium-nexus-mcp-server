@@ -2,10 +2,12 @@
 // track SCRAPER_REQUEST_TIMEOUT) fire within a few seconds. Must be set
 // before the first getConfig() call in this worker.
 process.env.SCRAPER_REQUEST_TIMEOUT = '1000'
+process.env.SCRAPER_CONNECT_TIMEOUT = '500'
 
 import test from 'ava'
 import http from 'node:http'
 import { fetch } from 'undici'
+import { getConfig } from '../../config.ts'
 import { getScrapeDispatcher } from '../dispatcher.ts'
 
 type Blackhole = {
@@ -77,4 +79,8 @@ test('dispatcher times out a stalled response and destroys the socket', async (t
 
 test('dispatcher is a shared instance', async (t) => {
     t.is(getScrapeDispatcher(), getScrapeDispatcher())
+})
+
+test('connect timeout comes from SCRAPER_CONNECT_TIMEOUT', async (t) => {
+    t.is(getConfig().scraper.connectTimeout, 500)
 })
