@@ -33,7 +33,10 @@ src/
     ├── location-db/            # Bundled location database
     ├── promises.ts             # Promise utility helpers
     └── webscraper/             # Web scraping orchestrator
-        ├── webscraper.ts       # Orchestrator (routes to the right scraper)
+        ├── webscraper.ts       # Orchestrator (routes to the right scraper, SSRF pre-check + concurrency cap)
+        ├── ssrf.ts             # SSRF guard: URL validation + SSRF-safe connect function
+        ├── dispatcher.ts       # Shared undici dispatchers (socket timeouts; SSRF-safe connect for scraping)
+        ├── scrapeSlots.ts      # FIFO scrape concurrency cap
         ├── CrwScraper.ts       # CRW (Firecrawl-compatible) API client, primary scraper
         ├── BasicHtmlScraper.ts # Local readability-based fallback scraper
         ├── IScraper.ts         # Scraper interface
@@ -47,6 +50,7 @@ src/
 - **Stateless MCP server** — a fresh `McpServer` + `StreamableHTTPServerTransport` is created per request
 - **Tool timeouts** — each tool call gets an `AbortSignal` with configurable timeout (default 30s)
 - **Config singleton** — `getConfig()` parses all env vars once and caches the result
+- **SSRF guard** — every scrape goes through `doWebScrape`, which pre-checks the URL. The jsdom dispatcher's custom connector re-resolves DNS at connect time, refuses private/reserved addresses, and pins the first valid IP, closing the TOCTOU, redirect, and subresource bypasses
 
 ## Available Tools
 
