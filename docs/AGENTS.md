@@ -177,6 +177,7 @@ Applies to all code, comments, commit messages, and replies.
 
 - Human-facing text (comment, commit message, reply): as few words as possible. Pick every word meticulously. Be down to the point. Less is more.
 - No superlatives, no praise. Give the cold hard truth.
+- Replies to the user follow **ASD-STE100 Simplified Technical English**: short sentences, one idea per sentence, simple words, active voice.
 
 ### Code
 
