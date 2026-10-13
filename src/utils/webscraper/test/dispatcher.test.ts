@@ -8,7 +8,7 @@ import test from 'ava'
 import http from 'node:http'
 import { fetch } from 'undici'
 import { getConfig } from '../../config.ts'
-import { getScrapeDispatcher } from '../dispatcher.ts'
+import { getApiDispatcher, getScrapeDispatcher } from '../dispatcher.ts'
 
 type Blackhole = {
     url: string
@@ -42,12 +42,14 @@ function sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-test('dispatcher times out a stalled response and destroys the socket', async (t) => {
+test('api dispatcher times out a stalled response and destroys the socket', async (t) => {
+    // The api dispatcher (timeouts only, no SSRF connector) is the one that
+    // may talk to loopback, so the blackhole test lives here.
     const hole = await startBlackhole()
     t.teardown(() => hole.close())
 
     const started = Date.now()
-    const error = await fetch(`${hole.url}/`, { dispatcher: getScrapeDispatcher() }).then(
+    const error = await fetch(`${hole.url}/`, { dispatcher: getApiDispatcher() }).then(
         () => null,
         (err: unknown) => (err instanceof Error ? err : new Error(String(err))),
     )
@@ -77,8 +79,36 @@ test('dispatcher times out a stalled response and destroys the socket', async (t
     ])
 })
 
-test('dispatcher is a shared instance', async (t) => {
+test('dispatchers are shared instances', async (t) => {
     t.is(getScrapeDispatcher(), getScrapeDispatcher())
+    t.is(getApiDispatcher(), getApiDispatcher())
+    t.not(getScrapeDispatcher(), getApiDispatcher())
+})
+
+test('scrape dispatcher refuses loopback connections before any TCP', async (t) => {
+    let connections = 0
+    const server = http.createServer((req, res) => {
+        connections++
+        res.end('internal')
+    })
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
+    const address = server.address()
+    const port = address && typeof address === 'object' ? address.port : 0
+    t.teardown(() => new Promise<void>((r) => server.close(() => r())))
+
+    const error = await fetch(`http://127.0.0.1:${port}/`, { dispatcher: getScrapeDispatcher() }).then(
+        () => null,
+        (err: unknown) => (err instanceof Error ? err : new Error(String(err))),
+    )
+    if (error === null) {
+        t.fail('the request should have been refused')
+        return
+    }
+
+    // fetch() wraps the undici error: the refusal detail is on `cause`.
+    const cause = error.cause instanceof Error ? error.cause : new Error(String(error.cause))
+    t.regex(cause.message, /private or reserved/)
+    t.is(connections, 0, 'no TCP connection reached the loopback server')
 })
 
 test('connect timeout comes from SCRAPER_CONNECT_TIMEOUT', async (t) => {

@@ -4,7 +4,6 @@
 process.env.SCRAPER_REQUEST_TIMEOUT = '1000'
 
 import test from 'ava'
-import http from 'node:http'
 import { JSDOM } from 'jsdom'
 import BasicHtmlScraper from '../BasicHtmlScraper.ts'
 import { getConfig } from '../../config.ts'
@@ -28,66 +27,32 @@ const PAGE = `<!DOCTYPE html>
 </body>
 </html>`
 
-function startServer(handler: http.RequestListener): Promise<{ url: string; close: () => Promise<void> }> {
-    return new Promise((resolve) => {
-        const server = http.createServer(handler)
-        server.listen(0, '127.0.0.1', () => {
-            const address = server.address()
-            const port = address && typeof address === 'object' ? address.port : 0
-            resolve({
-                url: `http://127.0.0.1:${port}`,
-                close: () => new Promise<void>((r) => server.close(() => r())),
-            })
-        })
-    })
-}
-
 function sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-test('scrape rejects when the server accepts but never responds', async (t) => {
-    // Blackhole: accepts the TCP connection and sends nothing. The scrape
-    // must fail on its own via the dispatcher socket timeout, not hang until
-    // the per-scraper budget abandons it (or forever, as before the fix).
-    const hole = await startServer(() => undefined)
-    t.teardown(() => hole.close())
-
-    let settled = false
-    const error = await Promise.race([
-        new BasicHtmlScraper()
-            .scrape(hole.url, getConfig(), new AbortController().signal)
-            .then(
-                () => null,
-                (err: unknown) => {
-                    settled = true
-                    return err instanceof Error ? err : new Error(String(err))
-                },
-            ),
-        sleep(5_000).then(() => null),
-    ])
-
-    t.true(settled, 'the scrape settled on its own instead of hanging')
-    t.truthy(error, 'a blackhole scrape must fail, not succeed')
-})
-
-// Patches JSDOM.fromURL to record every created window and wrap window.close
-// (jsdom does not implement window.closed) so tests can observe when a window
-// is closed.
-function trackWindows(t: { teardown: (fn: () => void) => void }) {
+// Replaces JSDOM.fromURL with a fake that resolves a real JSDOM after a
+// delay, and tracks window creation/close (jsdom does not implement
+// window.closed). No network is involved: the SSRF-safe dispatcher refuses
+// the loopback addresses a local test server would use, so lifecycle tests
+// drive the promise directly.
+function fakeFromUrl(t: { teardown: (fn: () => void) => void }, page: string, delayMs: number) {
     const windows: JSDOM[] = []
     const closed: JSDOM[] = []
-    const originalFromURL: (...args: any[]) => Promise<JSDOM> = JSDOM.fromURL
+    const originalFromURL: typeof JSDOM.fromURL = JSDOM.fromURL
 
-    JSDOM.fromURL = (...args: any[]) =>
-        originalFromURL(...args).then((dom) => {
-            windows.push(dom)
-            const originalClose = dom.window.close.bind(dom.window)
-            dom.window.close = () => {
-                closed.push(dom)
-                originalClose()
-            }
-            return dom
+    JSDOM.fromURL = (..._args: any[]) =>
+        new Promise<JSDOM>((resolve) => {
+            setTimeout(() => {
+                const dom = new JSDOM(page)
+                windows.push(dom)
+                const originalClose = dom.window.close.bind(dom.window)
+                dom.window.close = () => {
+                    closed.push(dom)
+                    originalClose()
+                }
+                resolve(dom)
+            }, delayMs)
         })
 
     t.teardown(() => {
@@ -97,17 +62,14 @@ function trackWindows(t: { teardown: (fn: () => void) => void }) {
     return { windows, closed }
 }
 
-test('scrape closes the JSDOM window after extracting content', async (t) => {
-    const { windows, closed } = trackWindows(t)
+// The fake fromURL patches a global, so these tests must not run
+// concurrently with each other.
 
-    const server = await startServer((req, res) => {
-        res.writeHead(200, { 'Content-Type': 'text/html' })
-        res.end(PAGE)
-    })
-    t.teardown(() => server.close())
+test.serial('scrape closes the JSDOM window after extracting content', async (t) => {
+    const { windows, closed } = fakeFromUrl(t, PAGE, 10)
 
     const result = await new BasicHtmlScraper().scrape(
-        server.url,
+        'http://test.example/page',
         getConfig(),
         new AbortController().signal,
     )
@@ -118,23 +80,15 @@ test('scrape closes the JSDOM window after extracting content', async (t) => {
     t.is(closed[0], windows[0])
 })
 
-test('scrape closes the JSDOM window when the signal aborts mid-fetch', async (t) => {
-    const { windows, closed } = trackWindows(t)
-
-    // Delay the response so the abort fires while JSDOM is still fetching.
-    const server = await startServer((req, res) => {
-        setTimeout(() => {
-            res.writeHead(200, { 'Content-Type': 'text/html' })
-            res.end(PAGE)
-        }, 400)
-    })
-    t.teardown(() => server.close())
+test.serial('scrape closes the JSDOM window when the signal aborts mid-fetch', async (t) => {
+    // Delay the resolution so the abort fires while the fetch is in flight.
+    const { windows, closed } = fakeFromUrl(t, PAGE, 400)
 
     const controller = new AbortController()
     setTimeout(() => controller.abort(new Error('client cancelled')), 100)
 
     const error = await new BasicHtmlScraper()
-        .scrape(server.url, getConfig(), controller.signal)
+        .scrape('http://test.example/page', getConfig(), controller.signal)
         .then(
             () => null,
             (e: unknown) => e,
@@ -142,8 +96,8 @@ test('scrape closes the JSDOM window when the signal aborts mid-fetch', async (t
 
     t.is(error instanceof Error ? error.message : String(error), 'JSDOM aborted')
 
-    // The delayed response still arrives after the abort; the late window must
-    // be closed once JSDOM settles.
+    // The delayed resolution still arrives after the abort; the late window
+    // must be closed once it settles.
     const deadline = Date.now() + 3_000
     while (Date.now() < deadline && windows.length === 0) {
         await sleep(50)
@@ -151,4 +105,23 @@ test('scrape closes the JSDOM window when the signal aborts mid-fetch', async (t
     t.is(windows.length, 1, 'the in-flight JSDOM instance settled')
     t.is(closed.length, 1, 'the late JSDOM window was closed')
     t.is(closed[0], windows[0])
+})
+
+test.serial('scrape refuses loopback URLs at connect', async (t) => {
+    // No server needed: the SSRF-safe connector refuses before any TCP
+    // connection, so a dead port is fine (just not a port jsdom itself
+    // restricts, like 9). This also proves jsdom document fetches route
+    // through the safe connector (redirects and subresources share it).
+    const error = await new BasicHtmlScraper()
+        .scrape('http://127.0.0.1:41234/', getConfig(), new AbortController().signal)
+        .then(
+            () => null,
+            (e: unknown) => e,
+        )
+
+    if (!(error instanceof Error)) {
+        t.fail(`expected an Error, got: ${String(error)}`)
+        return
+    }
+    t.regex(error.message, /private or reserved/)
 })

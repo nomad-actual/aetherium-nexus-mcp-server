@@ -26,7 +26,10 @@ src/
     ├── location-db/      # Bundled world-cities JSON database
     ├── promises.ts       # Promise utility helpers
     └── webscraper/
-        ├── webscraper.ts # Orchestrator (routes to the right scraper)
+        ├── webscraper.ts # Orchestrator (routes to the right scraper, SSRF pre-check + concurrency cap)
+        ├── ssrf.ts       # SSRF guard: URL validation + the SSRF-safe connect function
+        ├── dispatcher.ts # Shared undici dispatchers (socket timeouts; SSRF-safe connect for scraping)
+        ├── scrapeSlots.ts# FIFO scrape concurrency cap
         ├── BasicHtmlScraper.ts
         ├── CrwScraper.ts # Firecrawl-compatible CRW API client (primary web scraper)
         ├── IScraper.ts   # Scraper interface
@@ -42,6 +45,7 @@ Repo root also contains `openapi.json` + `docs/api.md` (generated API docs).
 - **Stateless MCP server**: A fresh `McpServer` + `StreamableHTTPServerTransport` is created per POST `/mcp` request. GET and DELETE on `/mcp` return 405.
 - **Tool timeout**: Each tool call gets an `AbortSignal` via `AbortSignal.timeout(config.mcpServer.toolCallRequestTimeout)` (`src/server/mcp.server.ts:40`), configurable through `TOOL_CALL_TIMEOUT` (default 30,000 ms).
 - **Config singleton**: `getConfig()` in `src/utils/config.ts` parses all env vars once and caches the result. All code imports from there.
+- **SSRF guard**: All outbound scrapes go through `doWebScrape`, which pre-checks the URL (`assertFetchableUrl` in `src/utils/webscraper/ssrf.ts`). The real enforcement happens at connect time: the jsdom dispatcher's custom connector (`createSsrfSafeConnect`) re-resolves DNS, refuses private/reserved addresses, and pins the first valid IP — so redirects, subresources, and DNS rebinding cannot reach internal addresses. The CRW client uses the plain `getApiDispatcher()` instead: its endpoint is operator config and may be localhost.
 
 ## Available MCP Tools
 
