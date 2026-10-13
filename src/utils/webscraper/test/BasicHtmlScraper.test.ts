@@ -1,3 +1,8 @@
+// Low per-scraper budget so the dispatcher socket timeouts (which track
+// SCRAPER_REQUEST_TIMEOUT) fire within a few seconds. Must be set before the
+// first getConfig() call in this worker.
+process.env.SCRAPER_REQUEST_TIMEOUT = '1000'
+
 import test from 'ava'
 import http from 'node:http'
 import { JSDOM } from 'jsdom'
@@ -40,6 +45,31 @@ function startServer(handler: http.RequestListener): Promise<{ url: string; clos
 function sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms))
 }
+
+test('scrape rejects when the server accepts but never responds', async (t) => {
+    // Blackhole: accepts the TCP connection and sends nothing. The scrape
+    // must fail on its own via the dispatcher socket timeout, not hang until
+    // the per-scraper budget abandons it (or forever, as before the fix).
+    const hole = await startServer(() => undefined)
+    t.teardown(() => hole.close())
+
+    let settled = false
+    const error = await Promise.race([
+        new BasicHtmlScraper()
+            .scrape(hole.url, getConfig(), new AbortController().signal)
+            .then(
+                () => null,
+                (err: unknown) => {
+                    settled = true
+                    return err instanceof Error ? err : new Error(String(err))
+                },
+            ),
+        sleep(5_000).then(() => null),
+    ])
+
+    t.true(settled, 'the scrape settled on its own instead of hanging')
+    t.truthy(error, 'a blackhole scrape must fail, not succeed')
+})
 
 // Patches JSDOM.fromURL to record every created window and wrap window.close
 // (jsdom does not implement window.closed) so tests can observe when a window

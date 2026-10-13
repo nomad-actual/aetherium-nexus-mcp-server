@@ -167,6 +167,7 @@ A healthy server responds with an SSE `message` event containing `serverInfo: { 
 - **`getConfig()` returns a cached singleton** — the config object is memoized on first call (`src/utils/config.ts:27`). Never mutate the returned object. If you need a modified copy (e.g., overriding `limitResults`), spread it into a new object first.
 - **Always check `signal.throwIfAborted()`** early in your handler. The MCP server wraps each tool call with `AbortSignal.timeout(config.mcpServer.toolCallRequestTimeout)` (default 30s). Long-running work should also pass the signal along to downstream calls when possible.
 - **No build step** — the project runs `.ts` files natively via `node --experimental-strip-types`. TypeScript is checked with `npx tsc --noEmit`, not compiled.
+- **jsdom v30 ignores a custom `fetch` in `resources`** — `createResourceSettings` only reads `userAgent`, `dispatcher`, and `interceptors`. A timeout wired to a custom fetch silently does nothing; timeouts belong on the shared undici dispatcher (`src/utils/webscraper/dispatcher.ts`). Passing a `resources` object also turns on subresource (CSS/image) loading through that dispatcher.
 
 ## Code Style
 

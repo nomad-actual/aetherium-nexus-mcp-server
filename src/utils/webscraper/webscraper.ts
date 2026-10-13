@@ -1,9 +1,11 @@
 import type { AetheriumConfig, McpToolContent, ReadableWebpageContent } from '../../types.ts';
+import type { IScraper } from './IScraper.ts';
 import logger from '../logger.ts';
 import BasicHtmlScraper from './BasicHtmlScraper.ts';
 import CrwScraper from './CrwScraper.ts';
 import { abortTimeout } from '../promises.ts';
 import { assertFetchableUrl } from './ssrf.ts';
+import { withScrapeSlot } from './scrapeSlots.ts';
 
 function getScrapers(url: string) {
     return [
@@ -29,11 +31,7 @@ export async function doWebScrape(url: string, config: AetheriumConfig, signal: 
         logger.debug(`[Scraper] Attempting ${scraper.constructor.name} on ${url}`)
 
         try {
-            const contents = await abortTimeout<ReadableWebpageContent[] | null>(
-                scraper.scrape(url, config, signal),
-                config.scraper.timeout,
-                `${scraper.constructor.name} on ${url}`,
-            )
+            const contents = await attemptScrape(scraper, url, config, signal)
 
             if (contents && Array.isArray(contents) && contents.length > 0) {
                 const duration = ((Date.now() - startTime) / 1000).toFixed(2)
@@ -52,4 +50,22 @@ export async function doWebScrape(url: string, config: AetheriumConfig, signal: 
 
     logger.warn(`No content found on webpage ${url}`)
     return []
+}
+
+// One scrape attempt: a slot from the bounded pool plus the per-scraper
+// budget. When the budget abandons the scrape, the slot is freed immediately;
+// the abandoned work is bounded by the dispatcher socket timeouts.
+async function attemptScrape(
+    scraper: IScraper,
+    url: string,
+    config: AetheriumConfig,
+    signal: AbortSignal,
+): Promise<ReadableWebpageContent[] | null> {
+    return withScrapeSlot(() =>
+        abortTimeout<ReadableWebpageContent[] | null>(
+            scraper.scrape(url, config, signal),
+            config.scraper.timeout,
+            `${scraper.constructor.name} on ${url}`,
+        ),
+    )
 }
