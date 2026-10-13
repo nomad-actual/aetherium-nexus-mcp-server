@@ -4,7 +4,7 @@ import { capitalizeFirstLetter } from '../formatter.ts'
 import logger from '../logger.ts'
 import { fetch as undiciFetch } from 'undici'
 import { normalizeWhitespace } from './normalizeWhitespace.ts'
-import { getScrapeDispatcher } from './dispatcher.ts'
+import { getApiDispatcher } from './dispatcher.ts'
 
 type CrwScrapeResponse = {
     success: boolean
@@ -60,8 +60,9 @@ export default class CrwScraper implements IScraper {
             body: JSON.stringify(body),
             signal,
             // Socket timeouts so a stalled CRW host cannot hold a socket
-            // forever after the per-scraper budget abandons this fetch.
-            dispatcher: getScrapeDispatcher(),
+            // forever. The endpoint is operator config (may be localhost),
+            // so this uses the plain api dispatcher, not the SSRF-safe one.
+            dispatcher: getApiDispatcher(),
         })
 
         if (!resp.ok) {

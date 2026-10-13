@@ -1,7 +1,9 @@
 import test from 'ava'
 import http from 'node:http'
+import net from 'node:net'
 import { promises as dnsPromises } from 'node:dns'
-import { getBlockedUrlReason, isBlockedIp, assertFetchableUrl } from '../ssrf.ts'
+import { buildConnector } from 'undici'
+import { getBlockedUrlReason, isBlockedIp, assertFetchableUrl, createSsrfSafeConnect } from '../ssrf.ts'
 import { doWebScrape } from '../webscraper.ts'
 import { getConfig } from '../../config.ts'
 
@@ -171,4 +173,131 @@ test('doWebScrape refuses hostnames that resolve to private addresses', async (t
 
     t.true(error instanceof Error)
     t.regex((error as Error).message, /intranet\.example resolves to private or reserved address 192\.168\.0\.10/)
+})
+
+test('isBlockedIp fails closed on unparseable input', (t) => {
+    t.true(isBlockedIp('not-an-ip'))
+    t.true(isBlockedIp('300.1.2.3'))
+    t.true(isBlockedIp(':::'))
+})
+
+// A base connector that records its calls instead of opening sockets, so
+// tests can assert what the safe connector pins without any network.
+type ConnectOptions = Parameters<ReturnType<typeof buildConnector>>[0]
+
+function fakeBase(): { calls: ConnectOptions[]; connect: ReturnType<typeof buildConnector> } {
+    const calls: ConnectOptions[] = []
+    const connect: ReturnType<typeof buildConnector> = (opts, cb) => {
+        calls.push(opts)
+        cb(null, new net.Socket())
+    }
+    return { calls, connect }
+}
+
+function attemptConnect(
+    connect: ReturnType<typeof buildConnector>,
+    hostname: string,
+    protocol = 'http:',
+    servername?: string,
+): Promise<{ error: Error | null; socket: unknown }> {
+    return new Promise((resolve) => {
+        connect(
+            { hostname, host: hostname, port: '80', protocol, servername },
+            (err, socket) =>
+                resolve({
+                    error: err instanceof Error ? err : err ? new Error(String(err)) : null,
+                    socket,
+                }),
+        )
+    })
+}
+
+test('connect refuses a loopback IP literal before any TCP', async (t) => {
+    const { calls, connect } = fakeBase()
+    const { error, socket } = await attemptConnect(createSsrfSafeConnect(1_000, connect), '127.0.0.1')
+
+    if (error === null) {
+        t.fail('the loopback literal should be refused')
+        return
+    }
+    t.regex(error.message, /Refusing to connect to 127\.0\.0\.1/)
+    t.regex(error.message, /private or reserved/)
+    t.is(socket, null)
+    t.is(calls.length, 0, 'the base connector was never reached')
+})
+
+test('connect refuses a hostname that resolves only to private addresses', async (t) => {
+    mockLookup(t, [
+        { address: '127.0.0.1', family: 4 },
+        { address: '::1', family: 6 },
+    ])
+    const { calls, connect } = fakeBase()
+    const { error } = await attemptConnect(createSsrfSafeConnect(1_000, connect), 'rebinding.example.com')
+
+    if (error === null) {
+        t.fail('a hostname resolving only to private addresses should be refused')
+        return
+    }
+    t.regex(error.message, /Refusing to connect to rebinding\.example\.com/)
+    t.regex(error.message, /private or reserved/)
+    t.is(calls.length, 0, 'the base connector was never reached')
+})
+
+test('connect pins the first valid resolved address', async (t) => {
+    mockLookup(t, [
+        { address: '93.184.216.34', family: 4 },
+        { address: '10.0.0.1', family: 4 },
+    ])
+    const { calls, connect } = fakeBase()
+    const { error } = await attemptConnect(createSsrfSafeConnect(1_000, connect), 'mixed.example.com')
+
+    t.is(error, null)
+    t.is(calls.length, 1)
+    t.is(calls[0].hostname, '93.184.216.34')
+})
+
+test('connect pins a public IP literal and preserves the TLS servername', async (t) => {
+    const { calls, connect } = fakeBase()
+    const { error, socket } = await attemptConnect(
+        createSsrfSafeConnect(1_000, connect),
+        '93.184.216.34',
+        'https:',
+        'example.com',
+    )
+
+    t.is(error, null)
+    t.truthy(socket)
+    t.is(calls.length, 1)
+    t.is(calls[0].hostname, '93.184.216.34')
+    t.is(calls[0].servername, 'example.com')
+})
+
+test('connect surfaces DNS failures', async (t) => {
+    mockLookup(t, new Error('getaddrinfo ENOTFOUND nope.example'))
+    const { calls, connect } = fakeBase()
+    const { error } = await attemptConnect(createSsrfSafeConnect(1_000, connect), 'nope.example')
+
+    if (error === null) {
+        t.fail('the DNS failure should surface as an error')
+        return
+    }
+    t.regex(error.message, /ENOTFOUND/)
+    t.is(calls.length, 0)
+})
+
+test('connect times out a stalled DNS lookup', async (t) => {
+    mockLookup(t, new Promise<never>(() => undefined))
+    const { calls, connect } = fakeBase()
+
+    const started = Date.now()
+    const { error } = await attemptConnect(createSsrfSafeConnect(200, connect), 'stalled.example')
+    const elapsed = Date.now() - started
+
+    if (error === null) {
+        t.fail('the stalled lookup should time out')
+        return
+    }
+    t.regex(error.message, /timed out/)
+    t.true(elapsed < 1_000)
+    t.is(calls.length, 0)
 })

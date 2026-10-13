@@ -1,5 +1,6 @@
 import { isIP } from 'node:net'
 import { promises as dnsPromises } from 'node:dns'
+import { buildConnector } from 'undici'
 
 function parseIPv4(ip: string): number[] | null {
     const parts = ip.split('.')
@@ -95,7 +96,8 @@ export function isBlockedIp(ip: string): boolean {
     if (v4) return isBlockedIPv4(v4)
     const groups = expandIPv6(ip)
     if (groups) return isBlockedIPv6(groups)
-    return false
+    // Fail closed: an address we cannot parse must not be treated as public.
+    return true
 }
 
 function hostnameOf(url: string): string | null {
@@ -159,5 +161,86 @@ export async function assertFetchableUrl(url: string): Promise<void> {
         if (isBlockedIp(address)) {
             throw new Error(`Refusing to fetch ${url}: ${hostname} resolves to private or reserved address ${address}`)
         }
+    }
+}
+
+// dns.lookup has no timeout option and getaddrinfo can hang on a broken
+// resolver, so the lookup gets its own budget inside the connect budget.
+function lookupAll(hostname: string, timeoutMs: number): Promise<Array<{ address: string; family: number }>> {
+    return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+            reject(new Error(`DNS lookup for ${hostname} timed out after ${timeoutMs}ms`))
+        }, timeoutMs)
+
+        dnsPromises
+            .lookup(hostname, { all: true })
+            .then((addresses) => {
+                clearTimeout(timer)
+                resolve(addresses)
+            })
+            .catch((err) => {
+                clearTimeout(timer)
+                reject(err)
+            })
+    })
+}
+
+/**
+ * An undici connect function that enforces the SSRF blocklist at connect
+ * time. For IP literals it validates then pins the address. For hostnames it
+ * re-resolves DNS, refuses if no address is usable, and pins the first valid
+ * one. Validation and connection share a single resolution, so DNS rebinding
+ * is impossible: the address that is checked is the address that is used.
+ *
+ * Both phases are bounded by `timeoutMs`: the base connector applies it to
+ * the TCP handshake, and the DNS lookup races its own timer (undici does not
+ * apply the agent's connectTimeout to custom connect functions).
+ */
+export function createSsrfSafeConnect(
+    timeoutMs: number,
+    baseConnect: ReturnType<typeof buildConnector> = buildConnector({ timeout: timeoutMs }),
+): ReturnType<typeof buildConnector> {
+    return (options, callback) => {
+        const hostname = options.hostname.replace(/^\[|\]$/g, '')
+        const isTls = options.protocol === 'https:'
+
+        // Hand the pinned IP to the base connector; for TLS the original
+        // hostname is kept as the SNI/cert name.
+        const connectPinned = (ip: string): void => {
+            baseConnect(
+                {
+                    ...options,
+                    hostname: ip,
+                    host: ip,
+                    servername: isTls ? options.servername || hostname : options.servername,
+                },
+                callback,
+            )
+        }
+
+        // IP literal: validate then pin it directly.
+        if (isIP(hostname) !== 0) {
+            if (isBlockedIp(hostname)) {
+                callback(new Error(`Refusing to connect to ${hostname}: private or reserved address`), null)
+                return
+            }
+            connectPinned(hostname)
+            return
+        }
+
+        // Hostname: resolve, refuse if no address is usable, pin the first valid one.
+        lookupAll(hostname, timeoutMs)
+            .then((addresses) => {
+                const valid = addresses.find(({ address }) => !isBlockedIp(address))
+                if (!valid) {
+                    callback(
+                        new Error(`Refusing to connect to ${hostname}: resolves only to private or reserved addresses`),
+                        null,
+                    )
+                    return
+                }
+                connectPinned(valid.address)
+            })
+            .catch((err) => callback(err instanceof Error ? err : new Error(String(err)), null))
     }
 }
