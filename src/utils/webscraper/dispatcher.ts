@@ -1,6 +1,56 @@
-import { Agent } from 'undici'
+import { Agent, type Dispatcher } from 'undici'
 import { getConfig } from '../config.ts'
 import { createSsrfSafeConnect } from './ssrf.ts'
+
+/**
+ * Wrap a ReadableStream body with a byte counter.  Throws `AbortError`
+ * when the body exceeds `maxBytes`.  Returns a new ReadableStream that
+ * mirrors the original but aborts on overflow.
+ */
+export function wrapBodyWithSizeLimit(
+    body: ReadableStream<Uint8Array>,
+    maxBytes: number,
+    abortController: AbortController,
+): ReadableStream<Uint8Array> {
+    let received = 0
+    let aborted = false
+
+    return new ReadableStream<Uint8Array>({
+        start(controller) {
+            const reader = body.getReader()
+            pump()
+
+            async function pump() {
+                try {
+                    while (true) {
+                        const { done, value } = await reader.read()
+                        if (done) {
+                            controller.close()
+                            return
+                        }
+                        received += value.byteLength
+                        if (received > maxBytes && !aborted) {
+                            aborted = true
+                            const err = new Error(
+                                `Response body exceeds ${maxBytes} bytes`,
+                            )
+                            controller.error(err)
+                            reader.cancel(err)
+                            abortController.abort()
+                            return
+                        }
+                        controller.enqueue(value)
+                    }
+                } catch (err) {
+                    if (!aborted) controller.error(err)
+                }
+            }
+        },
+        cancel() {
+            body.cancel()
+        },
+    })
+}
 
 let scrapeDispatcher: Agent | null = null
 let apiDispatcher: Agent | null = null
@@ -58,4 +108,21 @@ export function getApiDispatcher(): Agent {
     })
 
     return apiDispatcher
+}
+
+/**
+ * Close both shared agents, draining in-flight requests.
+ * Call during graceful shutdown (SIGTERM/SIGINT).
+ */
+export async function closeDispatchers(): Promise<void> {
+    const promises: Promise<void>[] = []
+    if (scrapeDispatcher) {
+        promises.push(scrapeDispatcher.destroy())
+        scrapeDispatcher = null
+    }
+    if (apiDispatcher) {
+        promises.push(apiDispatcher.destroy())
+        apiDispatcher = null
+    }
+    await Promise.all(promises)
 }

@@ -21,9 +21,6 @@ async function searchForResults(queryArg: string, config: AetheriumConfig, abort
         url: '/search',
         timeout: config.search.timeout,
         signal: abortSignal,
-        headers: {
-            'Content-Type': 'application/json',
-        },
         params: {
             q: queryArg,
             format: 'json',
@@ -35,19 +32,7 @@ async function searchForResults(queryArg: string, config: AetheriumConfig, abort
     return (results.data || {}).results || [] as SearXNGResult[]
 }
 
-// omit known bad sites but really this hasn't happened yet often
-// we might want to instead 
 function filterSites(searchResults: SearXNGResult[], config: AetheriumConfig) {
-    // const badSites = [
-    //     // 'reddit.com'
-    // ]
-
-
-    // return searchResults.filter(result => {
-        //     const tempUrl = new URL(result.url).host
-        //     return !badSites.includes(tempUrl)
-        // }).slice(0, config.search.maxResults)
-
     // filter out sites that do not produce good html content for reader mode
     // we will get the top X results and grab the content
     return searchResults.slice(0, config.search.maxResults)
