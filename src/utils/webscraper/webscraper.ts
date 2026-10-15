@@ -16,7 +16,7 @@ function getScrapers(url: string) {
 
 export async function doWebScrape(url: string, config: AetheriumConfig, signal: AbortSignal): Promise<McpToolContent[]> {
     try {
-        await assertFetchableUrl(url)
+        await assertFetchableUrl(url, signal)
     } catch (err) {
         const message = err instanceof Error ? err.message : String(err)
         logger.warn(`[Scraper] ${message}`)

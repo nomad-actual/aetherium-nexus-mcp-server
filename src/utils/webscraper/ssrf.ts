@@ -140,7 +140,7 @@ export function getBlockedUrlReason(url: string): string | null {
     return null
 }
 
-export async function assertFetchableUrl(url: string): Promise<void> {
+export async function assertFetchableUrl(url: string, signal?: AbortSignal): Promise<void> {
     const reason = getBlockedUrlReason(url)
     if (reason) {
         throw new Error(`Refusing to fetch ${url}: ${reason}`)
@@ -150,9 +150,30 @@ export async function assertFetchableUrl(url: string): Promise<void> {
     if (hostname === null) return
     if (isIP(hostname) !== 0) return
 
+    // Race the DNS lookup against the caller's abort signal so a timed-out
+    // scrape doesn't leave this check hanging as an orphaned promise.
+    const lookup = lookupAll(hostname, 5_000)
+    const abortPromise = signal
+        ? new Promise<never>((_, reject) => {
+              if (signal.aborted) {
+                  reject(signal.reason ?? new Error('aborted'))
+              } else {
+                      signal.addEventListener(
+                          'abort',
+                          () => reject(signal.reason ?? new Error('aborted')),
+                          { once: true },
+                      )
+              }
+          })
+        : null
+
     let addresses: Array<{ address: string; family: number }>
     try {
-        addresses = await dnsPromises.lookup(hostname, { all: true })
+        if (abortPromise) {
+            addresses = await Promise.race([lookup, abortPromise])
+        } else {
+            addresses = await lookup
+        }
     } catch {
         return
     }

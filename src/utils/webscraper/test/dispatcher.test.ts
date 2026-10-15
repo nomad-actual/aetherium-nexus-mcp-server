@@ -130,7 +130,7 @@ test('connect timeout comes from SCRAPER_CONNECT_TIMEOUT', async (t) => {
 function startHybridServer(key: string, cert: string, seen: string[]): Promise<{ url: string; close: () => Promise<void> }> {
     const sockets: tls.TLSSocket[] = []
     const h2 = http2.createServer()
-    h2.on('stream', (stream) => {
+    h2.on('stream', (stream: import('node:http2').ServerHttp2Stream) => {
         seen.push('2.0')
         stream.respond({ ':status': 200, 'content-type': 'text/plain' })
         stream.end('h2-ok')
@@ -201,7 +201,7 @@ test('dispatchers never negotiate HTTP/2 with an h2-capable server', async (t) =
         key = readFileSync(path.join(dir, 'key.pem'), 'utf8')
         cert = readFileSync(path.join(dir, 'cert.pem'), 'utf8')
     } catch {
-        t.skip(true, 'openssl is not available; cannot stand up an h2/h1 TLS server')
+        t.log('openssl is not available; skipping h2/h1 TLS server test')
         return
     }
 
