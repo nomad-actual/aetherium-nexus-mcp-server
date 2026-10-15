@@ -259,8 +259,7 @@ async function fetchLocation(locationArg: string, config: AetheriumConfig, signa
     const locations = await searchLocation(city, { limit: 5 }, config.search.timeout, signal)
 
     if (locations.length === 0) {
-        // todo - return mcp error instead
-        throw new Error('Location not found')
+        return null
     }
 
     return closestMatch(locations, city, state)
