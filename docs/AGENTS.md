@@ -240,3 +240,4 @@ Two workflows: `.github/workflows/ci.yml` runs `npm test` on PRs and pushes to `
 
 - **Colons are INVALID in git branch names** — use slashes for branches (`fix/scraper-timeout`, `feat/weather-alerts`).
 - Prefix the **branch** with `major/`, `fix/`, or `hotfix/` to control the version bump; everything else bumps minor.
+- Always start from the latest `main` for each new branch: `git pull origin main` then `git checkout -b <branch>`. Never branch off an old local `main` — stale baselines cause merge conflicts and duplicate fixes.
