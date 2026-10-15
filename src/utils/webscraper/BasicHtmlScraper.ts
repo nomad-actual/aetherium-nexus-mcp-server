@@ -19,11 +19,12 @@ function buildJsdomResources(url: string) {
     if (!/^https?:/i.test(url)) return undefined
 
     // jsdom v30 routes the document and every subresource (CSS, images) through
-    // this dispatcher, so its socket timeouts bound all of them. Note: a custom
-    // `fetch` in this object is ignored by jsdom v30 — never wire timeouts there.
+    // this dispatcher. We short-circuit non-document requests to avoid
+    // downloading dozens of unnecessary CSS/image requests per page.
+    // Readability only needs the HTML document, not subresources.
     return {
         userAgent: USER_AGENT,
-        dispatcher: getScrapeDispatcher(),
+        dispatcher: getScrapeDispatcher(url),
     }
 }
 
