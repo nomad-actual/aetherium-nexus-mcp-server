@@ -23,6 +23,7 @@ function makeConfig(overrides: Partial<AetheriumConfig['mcpServer']> = {}): Aeth
             timeout: 1,
             connectTimeout: 1,
             maxConcurrent: 1,
+            maxBytes: 50_000_000,
             crw: { host: '', apiKey: '', renderJs: null, onlyMainContent: true },
             basicHtmlReader: { minReadableLength: 1 },
         },
