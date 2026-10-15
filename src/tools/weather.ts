@@ -4,6 +4,7 @@ import z from 'zod'
 import { formatDate, formatTemperature } from '../utils/formatter.ts'
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.d.ts'
 import { WeatherApiResponse } from '@openmeteo/sdk/weather-api-response.js'
+import type { VariablesWithTime } from '@openmeteo/sdk/variables-with-time.js'
 import { getConfig } from '../utils/config.ts'
 import type {
     AetheriumConfig,
@@ -34,12 +35,12 @@ const hourlyVars = [
     "weather_code",
 ]
 
-function buildCurrent(currentResponse: any, todayForecast: ForecastDay): CurrentWeather {
+function buildCurrent(currentResponse: VariablesWithTime, todayForecast: ForecastDay): CurrentWeather {
     // would like to map vars array to values but this is fine for now
-    const currentTemp = currentResponse.variables(0).value()
-    const precipitation = currentResponse.variables(1).value()
-    const rain = currentResponse.variables(2).value()
-    const weatherDesc = weatherCodeToType(currentResponse.variables(3).value())
+    const currentTemp = currentResponse.variables(0)!.value()
+    const precipitation = currentResponse.variables(1)!.value()
+    const rain = currentResponse.variables(2)!.value()
+    const weatherDesc = weatherCodeToType(String(currentResponse.variables(3)!.value()))
 
     const current: CurrentWeather = {
         temperature: currentTemp,
@@ -98,7 +99,7 @@ function range(start: number, stop: number, step: number) {
     )
 }
 
-function createTimeRanges(times: any, utcOffsetSeconds: number): Date[] {
+function createTimeRanges(times: VariablesWithTime, utcOffsetSeconds: number): Date[] {
     const ranges = range(
         Number(times.time()),
         Number(times.timeEnd()),
@@ -107,10 +108,10 @@ function createTimeRanges(times: any, utcOffsetSeconds: number): Date[] {
     return ranges.map((t) => new Date((t + utcOffsetSeconds) * 1000))
 }
 
-function buildHourly(hourly: any, utcOffsetSeconds: number): ForecastHour[] {
+function buildHourly(hourly: VariablesWithTime | null, utcOffsetSeconds: number): ForecastHour[] {
     if (!hourly) return []
 
-    const weatherData: any = {
+    const weatherData = {
         time: createTimeRanges(hourly, utcOffsetSeconds),
 		temperature2m: hourly.variables(0)!.valuesArray()!,
 		apparentTemperature: hourly.variables(1)!.valuesArray()!,
@@ -124,28 +125,28 @@ function buildHourly(hourly: any, utcOffsetSeconds: number): ForecastHour[] {
 
     for (let i = 0; i < len; i++) {
         hours.push({
-            time: weatherData.time[i].toISOString(),
-            description: weatherCodeToType(weatherData.weatherCode[i]),
-            temperature: weatherData.temperature2m[i],
-            feelsLike: weatherData.apparentTemperature[i],
-            precipitationProbability: weatherData.precipitationProbability[i],
-            precipitation: weatherData.precipitation[i],
+            time: weatherData.time[i],
+            description: weatherCodeToType(String(weatherData.weatherCode[i]!)),
+            temperature: weatherData.temperature2m[i]!,
+            feelsLike: weatherData.apparentTemperature[i]!,
+            precipitationProbability: weatherData.precipitationProbability[i]!,
+            precipitation: weatherData.precipitation[i]!,
         })
     }
 
     return hours
 }
 
-function buildDaily(daily: any, utcOffsetSeconds: number): ForecastDay[] {
+function buildDaily(daily: VariablesWithTime | null, utcOffsetSeconds: number): ForecastDay[] {
     if (!daily) return []
 
-    const weatherData: any = {
+    const weatherData = {
         time: createTimeRanges(daily, utcOffsetSeconds),
-        weatherCode: daily.variables(0).valuesArray(),
-        temperatureMax2m: daily.variables(1).valuesArray(),
-        temperatureMin2m: daily.variables(2).valuesArray(),
-        percipitationSum: daily.variables(3).valuesArray(),
-        percipitationHours: daily.variables(4).valuesArray()
+        weatherCode: daily.variables(0)!.valuesArray()!,
+        temperatureMax2m: daily.variables(1)!.valuesArray()!,
+        temperatureMin2m: daily.variables(2)!.valuesArray()!,
+        percipitationSum: daily.variables(3)!.valuesArray()!,
+        percipitationHours: daily.variables(4)!.valuesArray()!
     }
 
     const days: ForecastDay[] = []
@@ -153,8 +154,8 @@ function buildDaily(daily: any, utcOffsetSeconds: number): ForecastDay[] {
     const numDays = weatherData.time.length
     for (let i = 0; i < numDays; i++) {
         days.push({
-            time: weatherData.time[i].toISOString(),
-            description: weatherCodeToType(weatherData.weatherCode[i]),
+            time: weatherData.time[i],
+            description: weatherCodeToType(String(weatherData.weatherCode[i])),
             maxTemp: weatherData.temperatureMax2m[i],
             minTemp: weatherData.temperatureMin2m[i],
             percipitationSum: weatherData.percipitationSum[i],
@@ -172,7 +173,7 @@ async function fetchWeather(weatherQuery: WeatherQuery, signal: AbortSignal): Pr
     const precipitationUnit = weatherQuery.units === 'metric' ? 'mm' : 'inch'
     const temperatureUnit = weatherQuery.units === 'metric' ? 'celsius' : 'fahrenheit'
 
-    const params: any = {
+    const params: Record<string, unknown> = {
         latitude: [weatherQuery.lat],
         longitude: [weatherQuery.lon],
         temperature_unit: temperatureUnit,
@@ -222,7 +223,7 @@ function buildWeatherData(response: WeatherApiResponse): WeatherData {
         throw new Error('Weather data incomplete')
     }
 
-    const current = buildCurrent(response.current(), today)
+    const current = buildCurrent(response.current()!, today)
 
     const weather: WeatherData = {
         current,
@@ -324,7 +325,8 @@ async function currentWeatherToolHandler(
     }
 }
 
-async function weatherForecastToolHandler({ location }: any, config: AetheriumConfig, signal: AbortSignal): Promise<CallToolResult> {
+async function weatherForecastToolHandler(args: { location: string | undefined }, config: AetheriumConfig, signal: AbortSignal): Promise<CallToolResult> {
+    const { location } = args
     const lookup = await resolveLocationLookup(location, config)
     const locationObj = await fetchLocation(lookup, config, signal)
     const time = await getTime(config.timeserver, signal)
@@ -412,7 +414,7 @@ export function buildCurrentWeatherTool(): ToolsDef {
                 openWorldHint: true,
             },
         },
-        handler: async(args: any, signal: AbortSignal) => {
+        handler: async(args: { location: string | undefined }, signal: AbortSignal) => {
             const config = getConfig()
             return currentWeatherToolHandler(args, config, signal)
         }
@@ -437,7 +439,7 @@ export function buildForecastTool(): ToolsDef {
                 openWorldHint: true,
             }
         },
-        handler: async(args: any, signal: AbortSignal) => {
+        handler: async(args: { location: string | undefined }, signal: AbortSignal) => {
             try {
                 const config = getConfig()
                 return weatherForecastToolHandler(args, config, signal)

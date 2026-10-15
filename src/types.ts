@@ -1,4 +1,5 @@
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.d.ts"
+import type * as z from 'zod'
 
 type LocaleUnit = 'metric' | 'imperial'
 
@@ -26,7 +27,7 @@ export type ForecastHour = {
     temperature: number,
     feelsLike: number,
     precipitationProbability: number,
-    precipitation: string, // unsure what this is
+    precipitation: number,
     description: string,
 }
 
@@ -139,7 +140,7 @@ export type ReadableWebpageContent = {
     lang: string;
     publishedTime: string;
     scrapeDuration: string;
-    meta: any
+    meta: Record<string, string>
 }
 
 export type McpToolContent = {
@@ -152,7 +153,7 @@ export type McpToolContent = {
 
 export type ToolsDef = {
     name: string
-    config: any
-    handler(args: any, signal: AbortSignal): Promise<CallToolResult>
+    config: Record<string, unknown>
+    handler(args: Record<string, unknown>, signal: AbortSignal): Promise<CallToolResult>
 }
 
