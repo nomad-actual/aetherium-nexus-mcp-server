@@ -140,7 +140,11 @@ export function getBlockedUrlReason(url: string): string | null {
     return null
 }
 
-export async function assertFetchableUrl(url: string, signal?: AbortSignal): Promise<void> {
+export async function assertFetchableUrl(
+    url: string,
+    config: { scraper: { connectTimeout: number } },
+    signal?: AbortSignal,
+): Promise<void> {
     const reason = getBlockedUrlReason(url)
     if (reason) {
         throw new Error(`Refusing to fetch ${url}: ${reason}`)
@@ -152,7 +156,7 @@ export async function assertFetchableUrl(url: string, signal?: AbortSignal): Pro
 
     // Race the DNS lookup against the caller's abort signal so a timed-out
     // scrape doesn't leave this check hanging as an orphaned promise.
-    const lookup = lookupAll(hostname, 5_000)
+    const lookup = lookupAll(hostname, config.scraper.connectTimeout)
     const abortPromise = signal
         ? new Promise<never>((_, reject) => {
               if (signal.aborted) {
