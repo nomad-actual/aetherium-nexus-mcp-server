@@ -138,6 +138,19 @@ app.get('/health', (req: Request, res: Response) => {
 
 const { port, host } = config.mcpServer
 
+// Refuse to bind to a non-localhost address without auth — prevents the
+// common mistake of accidentally exposing an unauthenticated MCP server
+// (and its scrape/search tools) as an open outbound HTTP proxy.
+const NON_LOCALHOST_HOSTS = ['0.0.0.0', '::']
+if (NON_LOCALHOST_HOSTS.includes(host) && !config.mcpServer.authToken) {
+    logger.error(
+        'MCP_SERVER_HOST is set to a non-localhost address without ' +
+        'MCP_SERVER_AUTH_TOKEN. Refusing to start. Set MCP_SERVER_AUTH_TOKEN ' +
+        'or change MCP_SERVER_HOST to 127.0.0.1.',
+    )
+    process.exit(1)
+}
+
 app.listen({ port, host }, (error: Error | undefined) => {
     if (error) {
         logger.error(error, 'Error starting MCP server')
