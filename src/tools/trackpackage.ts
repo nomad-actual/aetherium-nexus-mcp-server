@@ -19,7 +19,7 @@ function trackOnePackage(packageNumber: string, config: AetheriumConfig): Tracki
 
 type ScrapeFn = (url: string, config: AetheriumConfig, signal: AbortSignal) => Promise<McpToolContent[]>
 
-export async function trackPakages(args: { packages: string[] }, config: AetheriumConfig, abortSignal: AbortSignal, scrape: ScrapeFn = doWebScrape): Promise<CallToolResult> {
+export async function trackPackages(args: { packages: string[] }, config: AetheriumConfig, abortSignal: AbortSignal, scrape: ScrapeFn = doWebScrape): Promise<CallToolResult> {
     const packages = new Set(args.packages || [])
 
     if (packages.size === 0) {
@@ -109,7 +109,7 @@ export function buildPackageTrackingTool(): ToolsDef {
         handler: async(args: any, abortSignal: AbortSignal) => {
             try {
                 const config = getConfig()
-                return trackPakages(args, config, abortSignal)
+                return trackPackages(args, config, abortSignal)
             } catch(err) {
                 logger.error(err)
                 throw err
