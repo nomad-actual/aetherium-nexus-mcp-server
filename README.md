@@ -46,6 +46,8 @@ src/
 - **Native TypeScript execution** — no compilation step, run `.ts` directly with Node.js
 - **Stateless MCP server** — a fresh `McpServer` + `StreamableHTTPServerTransport` is created per request
 - **Tool timeouts** — each tool call gets an `AbortSignal` with configurable timeout (default 30s)
+- **DNS rebinding protection** — the `Host` header is validated on every request (SDK `hostHeaderValidation`); defaults to `localhost`/`127.0.0.1`/`[::1]` on localhost binds, operator-configurable via `MCP_SERVER_CORS_ALLOWED_HOSTS`
+- **Optional bearer auth** — set `MCP_SERVER_AUTH_TOKEN` to require `Authorization: Bearer <token>` on `/mcp`; the server warns at startup when it is unset
 - **Config singleton** — `getConfig()` parses all env vars once and caches the result
 
 ## Available Tools
