@@ -55,6 +55,19 @@ function filterSites(searchResults: SearXNGResult[], config: AetheriumConfig) {
 
 
 export async function search(args: any, config: AetheriumConfig, signal: AbortSignal): Promise<CallToolResult> {
+    // Validate that a search backend is configured before attempting a request.
+    // SEARCH_HOST defaults to '' which causes axios to throw "Invalid URL"
+    // with no actionable hint for the operator.
+    if (!config.search.host) {
+        return {
+            content: [{
+                type: 'text',
+                text: 'Web search is not configured. Set SEARCH_HOST to a SearXNG instance URL (e.g. http://localhost:8080).',
+            }],
+            isError: true,
+        }
+    }
+
     // crawl each site and retrieve html for summarization
     const start = Date.now()
     const searchResults = await searchForResults(args.query, config, signal)
