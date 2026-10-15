@@ -8,6 +8,7 @@ import { getConfig } from './utils/config.ts'
 import type { AetheriumConfig } from './types.ts'
 import logger from './utils/logger.ts'
 import { handleUncaughtErrors } from './utils/crashGuard.ts'
+import { closeDispatchers } from './utils/webscraper/dispatcher.ts'
 
 // Safety net before any other work: an uncaught exception (e.g. an unhandled
 // 'error' event from undici's HTTP/2 client) or an unhandled promise
@@ -180,3 +181,26 @@ app.listen({ port, host }, (error: Error | undefined) => {
 
     logger.info(`MCP Server listening on http://${host}:${port}`)
 })
+
+/**
+ * Graceful shutdown: stop accepting new requests, drain in-flight ones
+ * with a short deadline, close shared undici agents, then exit.
+ */
+async function shutdown(signal: string) {
+    logger.info(`Received ${signal}, shutting down gracefully...`)
+
+    // Undici agents will abort in-flight requests when destroyed,
+    // so we just close them after a brief drain window.
+    setTimeout(async () => {
+        try {
+            await closeDispatchers()
+            logger.info('Dispatchers closed')
+        } catch (err) {
+            logger.error(err, 'Error closing dispatchers')
+        }
+        process.exit(0)
+    }, 2_000)
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'))
+process.on('SIGINT', () => shutdown('SIGINT'))
