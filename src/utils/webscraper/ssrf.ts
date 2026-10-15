@@ -142,50 +142,17 @@ export function getBlockedUrlReason(url: string): string | null {
 
 export async function assertFetchableUrl(
     url: string,
-    config: { scraper: { connectTimeout: number } },
-    signal?: AbortSignal,
+    _config: { scraper: { connectTimeout: number } },
+    _signal?: AbortSignal,
 ): Promise<void> {
+    // URL pattern checks (protocol, IP literals) happen here.
+    // Hostname DNS resolution is delegated to createSsrfSafeConnect which
+    // is the authoritative check — it pins the validated address, preventing
+    // DNS rebinding. Doing DNS here too wastes a thread from the 4-thread
+    // libuv pool (two getaddrinfo calls per scrape).
     const reason = getBlockedUrlReason(url)
     if (reason) {
         throw new Error(`Refusing to fetch ${url}: ${reason}`)
-    }
-
-    const hostname = hostnameOf(url)
-    if (hostname === null) return
-    if (isIP(hostname) !== 0) return
-
-    // Race the DNS lookup against the caller's abort signal so a timed-out
-    // scrape doesn't leave this check hanging as an orphaned promise.
-    const lookup = lookupAll(hostname, config.scraper.connectTimeout)
-    const abortPromise = signal
-        ? new Promise<never>((_, reject) => {
-              if (signal.aborted) {
-                  reject(signal.reason ?? new Error('aborted'))
-              } else {
-                      signal.addEventListener(
-                          'abort',
-                          () => reject(signal.reason ?? new Error('aborted')),
-                          { once: true },
-                      )
-              }
-          })
-        : null
-
-    let addresses: Array<{ address: string; family: number }>
-    try {
-        if (abortPromise) {
-            addresses = await Promise.race([lookup, abortPromise])
-        } else {
-            addresses = await lookup
-        }
-    } catch {
-        return
-    }
-
-    for (const { address } of addresses) {
-        if (isBlockedIp(address)) {
-            throw new Error(`Refusing to fetch ${url}: ${hostname} resolves to private or reserved address ${address}`)
-        }
     }
 }
 
