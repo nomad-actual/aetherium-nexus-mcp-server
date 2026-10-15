@@ -93,7 +93,7 @@ The Dockerfile uses `node:26-alpine3.23`, installs production deps only (`npm ci
 
 | Group | env vars | Controls |
 |-------|----------|----------|
-| MCP Server | `MCP_SERVER_PORT`, `MCP_SERVER_HOST`, `MCP_SERVER_CORS_ALLOWED_ORIGINS`, `MCP_SERVER_CORS_ALLOWED_HOSTS`, `MCP_SERVER_TITLE`, `MCP_SERVER_VERSION`, `TOOL_CALL_TIMEOUT` | Port (3000), host (localhost), CORS lists (`\|`-separated), title, reported version (dev), tool timeout ms (30000) |
+| MCP Server | `MCP_SERVER_PORT`, `MCP_SERVER_HOST`, `MCP_SERVER_CORS_ALLOWED_HOSTS`, `MCP_SERVER_CORS_ALLOWED_ORIGINS`, `MCP_SERVER_AUTH_TOKEN`, `MCP_SERVER_TITLE`, `MCP_SERVER_VERSION`, `TOOL_CALL_TIMEOUT` | Port (3000), host (localhost), DNS-rebinding Host allow-list (`\|`-separated hostnames, no ports; defaults to `localhost\|127.0.0.1\|[::1]` on localhost binds, see `src/server/guards.ts`), optional exact browser origins (enforced only when set), optional bearer token for `/mcp` (unauthenticated + startup warning when empty), title, reported version (dev), tool timeout ms (30000) |
 | Location | `DEFAULT_LOCATION_LAT`, `DEFAULT_LOCATION_LON` | Default lat/lon (Los Angeles); timezone derived via `geo-tz` |
 | NTP | `TIMESERVER_HOST`, `TIMESERVER_PORT`, `TIMESERVER_TIMEOUT` | Time server (time.nist.gov:123, 200 ms) |
 | Locale | `LOCALE_REGION`, `LOCALE_UNITS`, `LOCALE_MONTH`, `LOCALE_SHOWWEEKDAY`, `IS_24_HOUR_TIME` | Region (en-US), units, month style, weekday, 24h time |

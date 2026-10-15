@@ -3,6 +3,7 @@ import express, { type Request, type Response } from 'express'
 import cors from 'cors'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { buildMCPServer } from './server/mcp.server.ts'
+import { createBearerAuthMiddleware, hostValidationMiddleware } from './server/guards.ts'
 import { getConfig } from './utils/config.ts'
 import type { AetheriumConfig } from './types.ts'
 import logger from './utils/logger.ts'
@@ -11,7 +12,27 @@ const config: AetheriumConfig = getConfig()
 const corsAllowed = config.mcpServer.corsAllowedHosts
 
 const app = express()
+
+// DNS rebinding protection: reject disallowed Host headers before the body is
+// even read. Defaults to localhost-only for localhost binds (see guards.ts).
+const hostValidation = hostValidationMiddleware(config)
+if (hostValidation) {
+    app.use(hostValidation)
+}
+
 app.use(express.json())
+
+// Optional bearer auth for /mcp (MCP_SERVER_AUTH_TOKEN). /health stays open
+// for probes. When unset, the server is unauthenticated — fine for the
+// localhost trust model, risky on a network-exposed bind.
+if (config.mcpServer.authToken) {
+    app.use('/mcp', createBearerAuthMiddleware(config.mcpServer.authToken))
+} else {
+    logger.warn(
+        'MCP_SERVER_AUTH_TOKEN is not set; /mcp is unauthenticated. '
+        + 'Set it for any server reachable beyond your own machine.'
+    )
+}
 // todo: do this better
 // app.use(
 //     cors({
@@ -45,8 +66,12 @@ app.post('/mcp', async (req: Request, res: Response) => {
         const transport = new StreamableHTTPServerTransport({
             sessionIdGenerator: undefined,
             enableDnsRebindingProtection: true,
-            // allowedHosts: config.mcpServer.corsAllowedHosts,
-            // allowedOrigins: config.mcpServer.corsAllowedOrigins,
+            // Host header is enforced by hostValidationMiddleware above
+            // (port-agnostic, before body parsing); the transport-level
+            // allowedHosts check is a raw exact match and would 403 on
+            // 'host:port' headers. Origin is checked only when the operator
+            // sets MCP_SERVER_CORS_ALLOWED_ORIGINS.
+            allowedOrigins: config.mcpServer.corsAllowedOrigins,
         })
 
         res.on('close', () => {
