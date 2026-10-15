@@ -15,7 +15,6 @@ import { handleUncaughtErrors } from './utils/crashGuard.ts'
 handleUncaughtErrors()
 
 const config: AetheriumConfig = getConfig()
-const corsAllowed = config.mcpServer.corsAllowedHosts
 
 const app = express()
 
@@ -42,23 +41,6 @@ if (config.mcpServer.authToken) {
         + 'Set it for any server reachable beyond your own machine.'
     )
 }
-// todo: do this better
-// app.use(
-//     cors({
-//         origin: function (origin: string | undefined, callback) {
-//             const safeOrigin = origin || ''
-//             const allowed = corsAllowed.findIndex(o => o === safeOrigin || safeOrigin.includes(o || ''))
-
-//             if (allowed >= 0) {
-//                 callback(null, true)
-//             } else {
-//                 callback(new Error('Not allowed by CORS'))
-//             }
-//         },
-//         exposedHeaders: ['Mcp-Session-Id'],
-//         allowedHeaders: ['Content-Type', 'mcp-session-id', 'mcp-protocol-version'],
-//     })
-// )
 
 app.post('/mcp', async (req: Request, res: Response) => {
     // In stateless mode, create a new instance of transport and server for each request

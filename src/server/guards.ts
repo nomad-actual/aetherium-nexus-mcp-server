@@ -55,10 +55,6 @@ export function createBearerAuthMiddleware(token: string): RequestHandler {
 }
 
 /**
- * DNS rebinding protection for the Host header, following the MCP SDK's own
- * pattern (createMcpExpressApp):
- *
-/**
  * Reduce an MCP_SERVER_CORS_ALLOWED_HOSTS entry to the hostname the SDK
  * middleware actually compares against. The SDK matches the request Host
  * header's hostname (scheme- and port-agnostic), so entries like
