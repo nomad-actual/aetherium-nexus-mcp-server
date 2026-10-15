@@ -4,7 +4,7 @@ import { capitalizeFirstLetter } from '../formatter.ts'
 import logger from '../logger.ts'
 import { fetch as undiciFetch } from 'undici'
 import { normalizeWhitespace } from './normalizeWhitespace.ts'
-import { getApiDispatcher } from './dispatcher.ts'
+import { getApiDispatcher, wrapBodyWithSizeLimit } from './dispatcher.ts'
 
 type CrwScrapeResponse = {
     success: boolean
@@ -70,7 +70,24 @@ export default class CrwScraper implements IScraper {
             return null
         }
 
-        const json = (await resp.json()) as CrwScrapeResponse
+        // Cap the response body to prevent OOM from a slow-drip response.
+        // The CRW API returns JSON (small), but the endpoint is user-configured
+        // and could be replaced by a malicious server.
+        const sizeController = new AbortController()
+        const limitedBody = wrapBodyWithSizeLimit(
+            resp.body as ReadableStream<Uint8Array>,
+            config.scraper.maxBytes,
+            sizeController,
+        )
+        const chunks: Uint8Array[] = []
+        const reader = limitedBody.getReader()
+        while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
+            if (value) chunks.push(value)
+        }
+        const bodyBuffer = Buffer.concat(chunks)
+        const json = JSON.parse(bodyBuffer.toString()) as CrwScrapeResponse
 
         if (!json.success || !json.data) {
             const code = json.error_code ? ` (${json.error_code})` : ''
