@@ -7,6 +7,12 @@ import { createBearerAuthMiddleware, hostValidationMiddleware } from './server/g
 import { getConfig } from './utils/config.ts'
 import type { AetheriumConfig } from './types.ts'
 import logger from './utils/logger.ts'
+import { handleUncaughtErrors } from './utils/crashGuard.ts'
+
+// Safety net before any other work: an uncaught exception (e.g. an unhandled
+// 'error' event from undici's HTTP/2 client) or an unhandled promise
+// rejection must not take the whole server down. See crashGuard.ts.
+handleUncaughtErrors()
 
 const config: AetheriumConfig = getConfig()
 const corsAllowed = config.mcpServer.corsAllowedHosts
