@@ -10,6 +10,15 @@ let citiesDb = [] as City[]
 // Numeric coordinates, parallel to citiesDb and precomputed at load time so
 // findNearestCity never re-parses the lat/lng strings on every call.
 let cityCoords: { lat: number; lng: number }[] = []
+
+// Grid-based prefilter: bucket cities into 1° cells so findNearestCity
+// only haversine-scans a tiny subset instead of all 32 763 cities.
+interface GridCell {
+    latBucket: number
+    lngBucket: number
+    indices: number[]
+}
+let cityGrid: Map<string, GridCell> = new Map()
 let dbLoaded = false
 
 function loadDb() {
@@ -17,6 +26,21 @@ function loadDb() {
     const raw = readFileSync(fp, { encoding: 'utf8' });
     citiesDb = JSON.parse(raw)
     cityCoords = citiesDb.map((city) => ({ lat: Number(city.lat), lng: Number(city.lng) }))
+
+    // Build the 1° grid: bucket each city by floor(lat) and floor(lng)
+    cityGrid = new Map()
+    for (let i = 0; i < citiesDb.length; i++) {
+        const lat = cityCoords[i].lat
+        const lng = cityCoords[i].lng
+        const key = `${Math.floor(lat)},${Math.floor(lng)}`
+        let cell = cityGrid.get(key)
+        if (!cell) {
+            cell = { latBucket: Math.floor(lat), lngBucket: Math.floor(lng), indices: [] }
+            cityGrid.set(key, cell)
+        }
+        cell.indices.push(i)
+    }
+
     dbLoaded = true
 }
 
@@ -45,16 +69,25 @@ export function findNearestCity(lat: number, lon: number): City | null {
     ensureDbLoaded()
     if (!citiesDb.length) return null;
 
-    let nearestCity: City | null = null;
-    let minDistance = Infinity;
+    let nearestCity: City | null = null
+    let minDistance = Infinity
 
-    for (let i = 0; i < citiesDb.length; i++) {
-      const distance = haversineDistance(lat, lon, cityCoords[i].lat, cityCoords[i].lng)
-
-      if (distance < minDistance) {
-        minDistance = distance
-        nearestCity = citiesDb[i]
-      }
+    // Scan the target cell and all 8 adjacent cells (a 3×3 window)
+    const latBucket = Math.floor(lat)
+    const lngBucket = Math.floor(lon)
+    for (let dLat = -1; dLat <= 1; dLat++) {
+        for (let dLng = -1; dLng <= 1; dLng++) {
+            const key = `${latBucket + dLat},${lngBucket + dLng}`
+            const cell = cityGrid.get(key)
+            if (!cell) continue
+            for (const idx of cell.indices) {
+                const distance = haversineDistance(lat, lon, cityCoords[idx].lat, cityCoords[idx].lng)
+                if (distance < minDistance) {
+                    minDistance = distance
+                    nearestCity = citiesDb[idx]
+                }
+            }
+        }
     }
 
     return nearestCity
