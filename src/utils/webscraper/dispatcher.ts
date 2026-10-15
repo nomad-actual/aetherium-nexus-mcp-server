@@ -132,3 +132,20 @@ export function getApiDispatcher(): Agent {
 
     return apiDispatcher
 }
+
+/**
+ * Close both shared agents, draining in-flight requests.
+ * Call during graceful shutdown (SIGTERM/SIGINT).
+ */
+export async function closeDispatchers(): Promise<void> {
+    const promises: Promise<void>[] = []
+    if (scrapeDispatcher) {
+        promises.push(scrapeDispatcher.destroy())
+        scrapeDispatcher = null
+    }
+    if (apiDispatcher) {
+        promises.push(apiDispatcher.destroy())
+        apiDispatcher = null
+    }
+    await Promise.all(promises)
+}

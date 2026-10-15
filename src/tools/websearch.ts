@@ -21,9 +21,6 @@ async function searchForResults(queryArg: string, config: AetheriumConfig, abort
         url: '/search',
         timeout: config.search.timeout,
         signal: abortSignal,
-        headers: {
-            'Content-Type': 'application/json',
-        },
         params: {
             q: queryArg,
             format: 'json',
@@ -35,19 +32,7 @@ async function searchForResults(queryArg: string, config: AetheriumConfig, abort
     return (results.data || {}).results || [] as SearXNGResult[]
 }
 
-// omit known bad sites but really this hasn't happened yet often
-// we might want to instead 
 function filterSites(searchResults: SearXNGResult[], config: AetheriumConfig) {
-    // const badSites = [
-    //     // 'reddit.com'
-    // ]
-
-
-    // return searchResults.filter(result => {
-        //     const tempUrl = new URL(result.url).host
-        //     return !badSites.includes(tempUrl)
-        // }).slice(0, config.search.maxResults)
-
     // filter out sites that do not produce good html content for reader mode
     // we will get the top X results and grab the content
     return searchResults.slice(0, config.search.maxResults)
@@ -55,6 +40,19 @@ function filterSites(searchResults: SearXNGResult[], config: AetheriumConfig) {
 
 
 export async function search(args: any, config: AetheriumConfig, signal: AbortSignal): Promise<CallToolResult> {
+    // Validate that a search backend is configured before attempting a request.
+    // SEARCH_HOST defaults to '' which causes axios to throw "Invalid URL"
+    // with no actionable hint for the operator.
+    if (!config.search.host) {
+        return {
+            content: [{
+                type: 'text',
+                text: 'Web search is not configured. Set SEARCH_HOST to a SearXNG instance URL (e.g. http://localhost:8080).',
+            }],
+            isError: true,
+        }
+    }
+
     // crawl each site and retrieve html for summarization
     const start = Date.now()
     const searchResults = await searchForResults(args.query, config, signal)
