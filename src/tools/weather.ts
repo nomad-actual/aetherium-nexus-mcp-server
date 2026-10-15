@@ -53,41 +53,40 @@ function buildCurrent(currentResponse: any, todayForecast: ForecastDay): Current
     return current
 }
 
-// these come from openmateo's docs which
-// Weather variable documentation (WMO Weather interpretation codes (WW))
-function weatherCodeToType(code: string): string {
-    const weatherCode: { [key: string]: string } = {
-        '0': 'Clear sky',
-        '1': 'Mainly clear',
-        '2': 'Partly cloudy',
-        '3': 'Overcast',
-        '45': 'Fog',
-        '48': 'Depositing rime fog',
-        '51': 'Drizzle: Light intensity',
-        '53': 'Drizzle: Moderate intensity',
-        '55': 'Drizzle: Dense intensity',
-        '56': 'Freezing Drizzle: Light intensity',
-        '57': 'Freezing Drizzle: Dense intensity',
-        '61': 'Rain: Slight intensity',
-        '63': 'Rain: Moderate intensity',
-        '65': 'Rain: Heavy intensity',
-        '66': 'Freezing Rain: Light intensity',
-        '67': 'Freezing Rain: Heavy intensity',
-        '71': 'Snow fall: Slight intensity',
-        '73': 'Snow fall: Moderate intensity',
-        '75': 'Snow fall: Heavy intensity',
-        '77': 'Snow grains',
-        '80': 'Rain showers: Slight intensity',
-        '81': 'Rain showers: Moderate intensity',
-        '82': 'Rain showers: Violent intensity',
-        '85': 'Snow showers: Slight intensity',
-        '86': 'Snow showers: Heavy intensity',
-        '95': 'Thunderstorm: Slight or moderate',
-        '96': 'Thunderstorm with slight hail',
-        '99': 'Thunderstorm with heavy hail',
-    }
+// WMO Weather interpretation codes (WW) from Open-Meteo docs:
+const weatherCodeMap: Record<string, string> = {
+    '0': 'Clear sky',
+    '1': 'Mainly clear',
+    '2': 'Partly cloudy',
+    '3': 'Overcast',
+    '45': 'Fog',
+    '48': 'Depositing rime fog',
+    '51': 'Drizzle: Light intensity',
+    '53': 'Drizzle: Moderate intensity',
+    '55': 'Drizzle: Dense intensity',
+    '56': 'Freezing Drizzle: Light intensity',
+    '57': 'Freezing Drizzle: Dense intensity',
+    '61': 'Rain: Slight intensity',
+    '63': 'Rain: Moderate intensity',
+    '65': 'Rain: Heavy intensity',
+    '66': 'Freezing Rain: Light intensity',
+    '67': 'Freezing Rain: Heavy intensity',
+    '71': 'Snow fall: Slight intensity',
+    '73': 'Snow fall: Moderate intensity',
+    '75': 'Snow fall: Heavy intensity',
+    '77': 'Snow grains',
+    '80': 'Rain showers: Slight intensity',
+    '81': 'Rain showers: Moderate intensity',
+    '82': 'Rain showers: Violent intensity',
+    '85': 'Snow showers: Slight intensity',
+    '86': 'Snow showers: Heavy intensity',
+    '95': 'Thunderstorm: Slight or moderate',
+    '96': 'Thunderstorm with slight hail',
+    '99': 'Thunderstorm with heavy hail',
+}
 
-    return weatherCode[code] || 'Unknown'
+function weatherCodeToType(code: string): string {
+    return weatherCodeMap[code] || 'Unknown'
 }
 
 // Helper function to form time ranges
@@ -259,8 +258,7 @@ async function fetchLocation(locationArg: string, config: AetheriumConfig, signa
     const locations = await searchLocation(city, { limit: 5 }, config.search.timeout, signal)
 
     if (locations.length === 0) {
-        // todo - return mcp error instead
-        throw new Error('Location not found')
+        return null
     }
 
     return closestMatch(locations, city, state)
