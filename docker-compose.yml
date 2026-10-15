@@ -5,7 +5,13 @@ services:
     env_file:
       - .env
     environment:
-      MCP_SERVER_HOST: 0.0.0.0
+      # Bind to localhost by default — safe for local development.
+      # To expose on the network, set MCP_SERVER_HOST to 0.0.0.0 AND
+      # set MCP_SERVER_AUTH_TOKEN to a secret (see .env.example).
+      MCP_SERVER_HOST: 127.0.0.1
     ports:
+      # Note: with the 127.0.0.1 default this port is only reachable
+      # from inside the container host. Change to "0.0.0.0:3030:3000"
+      # if you need external access (and set MCP_SERVER_AUTH_TOKEN).
       - "3030:3000"
     restart: unless-stopped
