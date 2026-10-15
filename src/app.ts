@@ -36,6 +36,11 @@ if (config.mcpServer.authToken) {
     )
 }
 
+// Explicit body limit (default is 100 KB).  Larger payloads are rejected
+// with a JSON-RPC error instead of the default Express HTML 413 page.
+const BODY_LIMIT = '1mb'
+app.use(express.json({ limit: BODY_LIMIT }))
+
 app.post('/mcp', async (req: Request, res: Response) => {
     // In stateless mode, create a new instance of transport and server for each request
     // to ensure complete isolation. A single instance would cause request ID collisions
