@@ -111,6 +111,7 @@ export type AetheriumConfig = {
         timeout: number,
         connectTimeout: number,
         maxConcurrent: number,
+        maxBytes: number,
         crw: {
             host: string,
             apiKey: string,
