@@ -128,6 +128,9 @@ export type AetheriumConfig = {
         contentLimit: number
         maxResults: number
     },
+    weather: {
+        forecastDays: number,
+    },
     locale: AetheriumLocaleOptions,
 }
 
