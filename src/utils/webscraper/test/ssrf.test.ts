@@ -85,20 +85,20 @@ function mockLookup(t: Teardown, result: unknown) {
 }
 
 test('assertFetchableUrl rejects blocked URLs', async (t) => {
-    await t.throwsAsync(() => assertFetchableUrl('http://127.0.0.1/'), {
+    await t.throwsAsync(() => assertFetchableUrl('http://127.0.0.1/', getConfig()), {
         message: /Refusing to fetch.*private or reserved address 127\.0\.0\.1/,
     })
-    await t.throwsAsync(() => assertFetchableUrl('http://localhost/'), {
+    await t.throwsAsync(() => assertFetchableUrl('http://localhost/', getConfig()), {
         message: /Refusing to fetch.*localhost/,
     })
-    await t.throwsAsync(() => assertFetchableUrl('file:///etc/passwd'), {
+    await t.throwsAsync(() => assertFetchableUrl('file:///etc/passwd', getConfig()), {
         message: /Refusing to fetch.*disallowed scheme/,
     })
 })
 
 test('assertFetchableUrl blocks hostnames that resolve to private addresses', async (t) => {
     mockLookup(t, [{ address: '127.0.0.1', family: 4 }])
-    await t.throwsAsync(() => assertFetchableUrl('http://rebinding.example.com/'), {
+    await t.throwsAsync(() => assertFetchableUrl('http://rebinding.example.com/', getConfig()), {
         message: /rebinding\.example\.com resolves to private or reserved address 127\.0\.0\.1/,
     })
 })
@@ -108,20 +108,20 @@ test('assertFetchableUrl blocks when any resolved address is private', async (t)
         { address: '93.184.216.34', family: 4 },
         { address: '10.0.0.1', family: 4 },
     ])
-    await t.throwsAsync(() => assertFetchableUrl('http://mixed.example.com/'), {
+    await t.throwsAsync(() => assertFetchableUrl('http://mixed.example.com/', getConfig()), {
         message: /resolves to private or reserved address 10\.0\.0\.1/,
     })
 })
 
 test('assertFetchableUrl passes hostnames that resolve to public addresses', async (t) => {
     mockLookup(t, [{ address: '93.184.216.34', family: 4 }])
-    await assertFetchableUrl('http://example.com/')
+    await assertFetchableUrl('http://example.com/', getConfig())
     t.pass()
 })
 
 test('assertFetchableUrl lets DNS failures surface as fetch errors', async (t) => {
     mockLookup(t, new Error('getaddrinfo ENOTFOUND nope.example'))
-    await assertFetchableUrl('http://nope.example/')
+    await assertFetchableUrl('http://nope.example/', getConfig())
     t.pass()
 })
 
