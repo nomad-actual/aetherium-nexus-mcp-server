@@ -1,5 +1,5 @@
 import 'dotenv/config'
-import express, { type Request, type Response } from 'express'
+import express, { type NextFunction, type Request, type Response } from 'express'
 import cors from 'cors'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { buildMCPServer } from './server/mcp.server.ts'
@@ -26,7 +26,10 @@ if (hostValidation) {
     app.use(hostValidation)
 }
 
-app.use(express.json())
+// Explicit body limit (default is 100 KB).  Larger payloads are rejected
+// with a JSON-RPC error instead of the default Express HTML 413 page.
+const BODY_LIMIT = '1mb'
+app.use(express.json({ limit: BODY_LIMIT }))
 
 // Optional bearer auth for /mcp (MCP_SERVER_AUTH_TOKEN). /health stays open
 // for probes. When unset, the server is unauthenticated — fine for the
@@ -134,6 +137,24 @@ app.delete('/mcp', async (req: Request, res: Response) => {
 
 app.get('/health', (req: Request, res: Response) => {
     res.status(200).json({ status: 'ok', uptime: process.uptime() })
+})
+
+// Catch-all error handler for /mcp — returns JSON-RPC error objects
+// instead of Express's default HTML error pages (which leak stack traces).
+app.use('/mcp', (err: Error, _req: Request, res: Response, _next: NextFunction) => {
+    logger.warn({ message: err.message }, 'MCP request error')
+
+    const status = err instanceof SyntaxError ? 400 : 500
+    const code = err instanceof SyntaxError ? -32700 : -32603
+    const message = err instanceof SyntaxError ? 'Parse error' : 'Internal server error'
+
+    if (!res.headersSent) {
+        res.status(status).json({
+            jsonrpc: '2.0',
+            error: { code, message },
+            id: null,
+        })
+    }
 })
 
 const { port, host } = config.mcpServer
