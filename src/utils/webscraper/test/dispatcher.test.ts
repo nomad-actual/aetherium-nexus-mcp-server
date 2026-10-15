@@ -86,9 +86,13 @@ test('api dispatcher times out a stalled response and destroys the socket', asyn
 })
 
 test('dispatchers are shared instances', async (t) => {
-    t.is(getScrapeDispatcher(), getScrapeDispatcher())
     t.is(getApiDispatcher(), getApiDispatcher())
-    t.not(getScrapeDispatcher(), getApiDispatcher())
+    // Scrape dispatcher is wrapped per-request (subresource filter),
+    // so identity is not guaranteed — just verify it returns a Dispatcher.
+    const d = getScrapeDispatcher('http://example.com')
+    t.truthy(typeof d.dispatch === 'function')
+    t.truthy(typeof d.destroy === 'function')
+    t.truthy(typeof d.close === 'function')
 })
 
 test('scrape dispatcher refuses loopback connections before any TCP', async (t) => {
@@ -102,7 +106,7 @@ test('scrape dispatcher refuses loopback connections before any TCP', async (t) 
     const port = address && typeof address === 'object' ? address.port : 0
     t.teardown(() => new Promise<void>((r) => server.close(() => r())))
 
-    const error = await fetch(`http://127.0.0.1:${port}/`, { dispatcher: getScrapeDispatcher() }).then(
+    const error = await fetch(`http://127.0.0.1:${port}/`, { dispatcher: getScrapeDispatcher(`http://127.0.0.1:${port}/`) }).then(
         () => null,
         (err: unknown) => (err instanceof Error ? err : new Error(String(err))),
     )
