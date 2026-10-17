@@ -14,11 +14,10 @@ export function formatTemperature(temperature: number, localeOpts: AetheriumLoca
 }
 
 export function formatDateTime(date: Date, localeOpts: AetheriumLocaleOptions, timezone: string) {
-    const dateStyle = 'long' // "full" | "long" | "medium" | "short"
-    const timeStyle = 'long' // "full" | "long" | "medium" | "short"
-    const hourCycle = localeOpts.is24HourTime ? 'h24' : 'h12' // "h11" | "h12" | "h23" | "h24"
-    const dayPeriod = 'short' // "narrow" | "short" | "long
-    
+    const dateStyle = 'long'
+    const timeStyle = 'long'
+    const hourCycle = localeOpts.is24HourTime ? 'h24' : 'h12'
+
     const formatter = new Intl.DateTimeFormat(localeOpts.region, {
         dateStyle,
         timeStyle,
@@ -29,14 +28,6 @@ export function formatDateTime(date: Date, localeOpts: AetheriumLocaleOptions, t
     return formatter.format(date)
 }
 
-export function formatDuration(startTimestamp: number) {
-    return `${(Date.now() - startTimestamp) / 1000}s`
-}
-
-export function formatTime(date: Date, localeOpts: AetheriumLocaleOptions) {
-    return date.toLocaleString(localeOpts.region, { hour: 'numeric', minute: 'numeric' })
-}
-
 export function formatDate(date: Date, localeOpts: AetheriumLocaleOptions, timezone?: string) {
     const weekday = localeOpts.showWeekday ? 'short' : undefined
     
@@ -45,8 +36,8 @@ export function formatDate(date: Date, localeOpts: AetheriumLocaleOptions, timez
         month: localeOpts.monthStyle,
         day: 'numeric',
         weekday,
-        hourCycle:  localeOpts.is24HourTime ? 'h24' : 'h12',
-        timeZone: timezone
+        hourCycle: localeOpts.is24HourTime ? 'h24' : 'h12',
+        ...(timezone && { timeZone: timezone })
     })
 }
 

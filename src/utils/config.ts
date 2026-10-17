@@ -81,6 +81,8 @@ export function getConfig(): AetheriumConfig {
             connectTimeout: Math.max(1, parseInt(process.env.SCRAPER_CONNECT_TIMEOUT || '', 10) || 2_000),
             // A limit below 1 would deadlock: every scrape would wait forever.
             maxConcurrent: Math.max(1, parseInt(process.env.SCRAPER_MAX_CONCURRENT || '', 10) || 10),
+            // Max response body size in bytes before aborting (prevents OOM).
+            maxBytes: parseInt(process.env.SCRAPER_MAX_BYTES || '', 10) || 50_000_000,
             crw: {
                 host: process.env.SCRAPER_CRW_HOST || '',
                 apiKey: process.env.SCRAPER_CRW_API_KEY || '',
@@ -97,6 +99,9 @@ export function getConfig(): AetheriumConfig {
             monthStyle: localeMonth,
             showWeekday: showWeekday,
             is24HourTime,
+        },
+        weather: {
+            forecastDays: parseInt(process.env.WEATHER_FORECAST_DAYS || '', 10) || 7,
         }
     }
 
