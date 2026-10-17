@@ -86,7 +86,7 @@ npm run start:dev
 docker compose up --build
 ```
 
-The Dockerfile uses `node:26-alpine3.23`, installs production deps only (`npm ci --omit=dev`), and runs `npm start`. `docker-compose.yml` mounts `.env` and maps port 3030 → 3000. The release version is baked in via the `VERSION` build arg (`MCP_SERVER_VERSION`).
+The Dockerfile uses `node:26-alpine3.24`, installs production deps only (`npm ci --omit=dev`), and runs `npm start`. `docker-compose.yml` mounts `.env` and maps port 3030 → 3000. The release version is baked in via the `VERSION` build arg (`MCP_SERVER_VERSION`).
 
 ## Configuration
 
@@ -105,7 +105,7 @@ The Dockerfile uses `node:26-alpine3.23`, installs production deps only (`npm ci
 
 ## Testing
 
-Unit tests use [AVA](https://github.com/avajs/ava) (`npm test`), configured in the `ava` key of `package.json` (`extensions: ["ts"]`, `files: ["**/*.test.ts"]`). Tests run natively via Node 24 type stripping — no loader or build step.
+Unit tests use [AVA](https://github.com/avajs/ava) (`npm test`), configured in the `ava` key of `package.json` (`extensions: ["ts"]`, `files: ["**/*.test.ts"]`). Tests run natively via Node 26 type stripping — no loader or build step.
 
 **Convention: unit tests live in a `test/` subfolder inside the directory they test.** E.g. tests for `src/utils/webscraper/normalizeWhitespace.ts` go in `src/utils/webscraper/test/normalizeWhitespace.test.ts`. Test files are named `*.test.ts` and import the code under test with an explicit `.ts` extension.
 
