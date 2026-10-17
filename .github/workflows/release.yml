@@ -33,12 +33,15 @@ jobs:
         env:
           BRANCH: ${{ github.head_ref }}
         run: |
-          # Bump from the branch name (major/, fix/, hotfix/, else minor).
+          # Bump from the branch name (major/, fix/, hotfix/, dependabot/, else minor).
           SOURCE="$BRANCH"
           BUMP=""
           case "$SOURCE" in
             major/*) BUMP=major ;;
             fix/*|hotfix/*) BUMP=patch ;;
+            # Dependabot branches are named dependabot/<ecosystem>/<...>;
+            # dependency updates do not change the app's own interface.
+            dependabot/*) BUMP=patch ;;
           esac
           if [ -z "$BUMP" ]; then
             BUMP=minor
