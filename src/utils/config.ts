@@ -99,6 +99,9 @@ export function getConfig(): AetheriumConfig {
             monthStyle: localeMonth,
             showWeekday: showWeekday,
             is24HourTime,
+        },
+        weather: {
+            forecastDays: parseInt(process.env.WEATHER_FORECAST_DAYS || '', 10) || 7,
         }
     }
 

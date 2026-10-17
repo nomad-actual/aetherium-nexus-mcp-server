@@ -26,14 +26,8 @@ if (hostValidation) {
     app.use(hostValidation)
 }
 
-// Explicit body limit (default is 100 KB).  Larger payloads are rejected
-// with a JSON-RPC error instead of the default Express HTML 413 page.
-const BODY_LIMIT = '1mb'
-app.use(express.json({ limit: BODY_LIMIT }))
-
-// Optional bearer auth for /mcp (MCP_SERVER_AUTH_TOKEN). /health stays open
-// for probes. When unset, the server is unauthenticated — fine for the
-// localhost trust model, risky on a network-exposed bind.
+// Bearer auth for /mcp MUST run before body parsing so unauthenticated
+// clients cannot waste CPU/memory on large bodies. /health stays open.
 if (config.mcpServer.authToken) {
     app.use('/mcp', createBearerAuthMiddleware(config.mcpServer.authToken))
 } else {
@@ -42,6 +36,11 @@ if (config.mcpServer.authToken) {
         + 'Set it for any server reachable beyond your own machine.'
     )
 }
+
+// Explicit body limit (default is 100 KB).  Larger payloads are rejected
+// with a JSON-RPC error instead of the default Express HTML 413 page.
+const BODY_LIMIT = '1mb'
+app.use(express.json({ limit: BODY_LIMIT }))
 
 app.post('/mcp', async (req: Request, res: Response) => {
     // In stateless mode, create a new instance of transport and server for each request

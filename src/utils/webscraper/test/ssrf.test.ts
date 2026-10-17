@@ -84,44 +84,30 @@ function mockLookup(t: Teardown, result: unknown) {
     })
 }
 
-test('assertFetchableUrl rejects blocked URLs', async (t) => {
-    await t.throwsAsync(() => assertFetchableUrl('http://127.0.0.1/', getConfig()), {
+test('assertFetchableUrl rejects blocked URLs', (t) => {
+    t.throws(() => assertFetchableUrl('http://127.0.0.1/'), {
         message: /Refusing to fetch.*private or reserved address 127\.0\.0\.1/,
     })
-    await t.throwsAsync(() => assertFetchableUrl('http://localhost/', getConfig()), {
+    t.throws(() => assertFetchableUrl('http://localhost/'), {
         message: /Refusing to fetch.*localhost/,
     })
-    await t.throwsAsync(() => assertFetchableUrl('file:///etc/passwd', getConfig()), {
+    t.throws(() => assertFetchableUrl('file:///etc/passwd'), {
         message: /Refusing to fetch.*disallowed scheme/,
     })
 })
 
-test('assertFetchableUrl blocks hostnames that resolve to private addresses', async (t) => {
+test('assertFetchableUrl does not resolve hostnames — that is done at connect time', (t) => {
+    // DNS resolution is delegated to createSsrfSafeConnect which pins the
+    // validated address, preventing DNS rebinding. Asserting here would
+    // waste a libuv thread (two getaddrinfo per scrape).
     mockLookup(t, [{ address: '127.0.0.1', family: 4 }])
-    await t.throwsAsync(() => assertFetchableUrl('http://rebinding.example.com/', getConfig()), {
-        message: /rebinding\.example\.com resolves to private or reserved address 127\.0\.0\.1/,
-    })
-})
-
-test('assertFetchableUrl blocks when any resolved address is private', async (t) => {
-    mockLookup(t, [
-        { address: '93.184.216.34', family: 4 },
-        { address: '10.0.0.1', family: 4 },
-    ])
-    await t.throwsAsync(() => assertFetchableUrl('http://mixed.example.com/', getConfig()), {
-        message: /resolves to private or reserved address 10\.0\.0\.1/,
-    })
-})
-
-test('assertFetchableUrl passes hostnames that resolve to public addresses', async (t) => {
-    mockLookup(t, [{ address: '93.184.216.34', family: 4 }])
-    await assertFetchableUrl('http://example.com/', getConfig())
+    assertFetchableUrl('http://rebinding.example.com/')
     t.pass()
 })
 
-test('assertFetchableUrl lets DNS failures surface as fetch errors', async (t) => {
-    mockLookup(t, new Error('getaddrinfo ENOTFOUND nope.example'))
-    await assertFetchableUrl('http://nope.example/', getConfig())
+test('assertFetchableUrl passes hostnames that resolve to public addresses', (t) => {
+    mockLookup(t, [{ address: '93.184.216.34', family: 4 }])
+    assertFetchableUrl('http://example.com/')
     t.pass()
 })
 
@@ -165,14 +151,16 @@ test('doWebScrape refuses loopback URLs before any network request', async (t) =
 test('doWebScrape refuses hostnames that resolve to private addresses', async (t) => {
     mockLookup(t, [{ address: '192.168.0.10', family: 4 }])
 
-    const error = await doWebScrape('http://intranet.example/', getConfig(), new AbortController().signal)
+    const result = await doWebScrape('http://intranet.example/', getConfig(), new AbortController().signal)
         .then(
-            () => null,
+            (r: unknown) => r,
             (e: unknown) => e,
         )
 
-    t.true(error instanceof Error)
-    t.regex((error as Error).message, /intranet\.example resolves to private or reserved address 192\.168\.0\.10/)
+    // Scrapers catch SSRF errors and try the next scraper; when all fail
+    // the result is an empty array rather than a thrown error.
+    t.true(Array.isArray(result), 'returns array (not thrown error)')
+    t.is((result as any[]).length, 0, 'no content for blocked hostname')
 })
 
 test('isBlockedIp fails closed on unparseable input', (t) => {
