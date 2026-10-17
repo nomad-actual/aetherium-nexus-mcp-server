@@ -1,6 +1,6 @@
 import test from 'ava'
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.d.ts'
-import { trackPakages } from '../trackpackage.ts'
+import { trackPackages } from '../trackpackage.ts'
 import type { McpToolContent } from '../../types.ts'
 import { getConfig } from '../../utils/config.ts'
 
@@ -28,7 +28,7 @@ test('scrapes run concurrently so the total is bounded by one scrape', async (t)
         return [{ type: 'text', text: `content for ${url}` }]
     }
 
-    const result = await trackPakages(
+    const result = await trackPackages(
         { packages: UPS },
         getConfig(),
         new AbortController().signal,
@@ -50,7 +50,7 @@ test('a failing scrape does not fail the other packages', async (t) => {
         return [{ type: 'text', text: `content for ${url}` }]
     }
 
-    const result = await trackPakages(
+    const result = await trackPackages(
         { packages: UPS },
         getConfig(),
         new AbortController().signal,
@@ -66,7 +66,7 @@ test('unrecognized tracking numbers are not scraped or counted', async (t) => {
         return []
     }
 
-    const result = await trackPakages(
+    const result = await trackPackages(
         { packages: ['NOT-A-TRACKING-NUMBER'] },
         getConfig(),
         new AbortController().signal,
@@ -84,7 +84,7 @@ test('duplicate tracking numbers are deduped', async (t) => {
         return [{ type: 'text', text: `content for ${url}` }]
     }
 
-    const result = await trackPakages(
+    const result = await trackPackages(
         { packages: [UPS[0], UPS[0]] },
         getConfig(),
         new AbortController().signal,
@@ -101,7 +101,7 @@ test('an empty package list is rejected before any scrape', async (t) => {
         return []
     }
 
-    const result = await trackPakages(
+    const result = await trackPackages(
         { packages: [] },
         getConfig(),
         new AbortController().signal,
