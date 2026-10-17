@@ -66,3 +66,4 @@ typings/
 
 # vs code ignore
 .vscode/
+docs/private/
