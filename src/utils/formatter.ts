@@ -6,7 +6,7 @@ export function formatTemperature(temperature: number, localeOpts: AetheriumLoca
     const formatter = Intl.NumberFormat(localeOpts.region, {
         style: 'unit',
         unit,
-        unitDisplay: localeOpts.monthStyle,
+        unitDisplay: 'short',
         maximumFractionDigits: 0,
     })
 
