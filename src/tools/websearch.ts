@@ -1,5 +1,5 @@
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.d.ts';
-import axios from 'axios';
+import { fetch as undiciFetch } from 'undici';
 import z from 'zod';
 
 import type { AetheriumConfig, ToolsDef } from '../types.ts';
@@ -15,21 +15,22 @@ type SearXNGResult = {
 // this is specifically for searxng
 async function searchForResults(queryArg: string, config: AetheriumConfig, abortSignal: AbortSignal): Promise<SearXNGResult[]> {
     // http2?
-    const results = await axios.request({
-        method: 'get',
-        baseURL: config.search.host,
-        url: '/search',
-        timeout: config.search.timeout,
-        signal: abortSignal,
-        params: {
-            q: queryArg,
-            format: 'json',
-            // support categories or specific engines (these will be neat if working)
-            // like search bandcamp for song/artist or something
-        }
-    })
+    const base = config.search.host.replace(/\/+$/, '')
+    const url = new URL(`${base}/search`)
+    url.searchParams.set('q', queryArg)
+    url.searchParams.set('format', 'json')
+    // support categories or specific engines (these will be neat if working)
+    // like search bandcamp for song/artist or something
 
-    return (results.data || {}).results || [] as SearXNGResult[]
+    const resp = await undiciFetch(url, {
+        signal: AbortSignal.any([abortSignal, AbortSignal.timeout(config.search.timeout)]),
+    })
+    if (!resp.ok) {
+        throw new Error(`SearXNG search failed with status ${resp.status}`)
+    }
+
+    const data = (await resp.json()) as { results?: SearXNGResult[] }
+    return data?.results ?? []
 }
 
 function filterSites(searchResults: SearXNGResult[], config: AetheriumConfig) {
@@ -41,7 +42,7 @@ function filterSites(searchResults: SearXNGResult[], config: AetheriumConfig) {
 
 export async function search(args: any, config: AetheriumConfig, signal: AbortSignal): Promise<CallToolResult> {
     // Validate that a search backend is configured before attempting a request.
-    // SEARCH_HOST defaults to '' which causes axios to throw "Invalid URL"
+    // SEARCH_HOST defaults to '' which makes the URL construction below fail
     // with no actionable hint for the operator.
     if (!config.search.host) {
         return {

@@ -1,5 +1,5 @@
 
-import axios from 'axios';
+import { fetch as undiciFetch } from 'undici';
 import type { City, LocationResult } from '../types.ts';
 import logger from './logger.ts';
 import { readFileSync } from 'node:fs';
@@ -61,22 +61,26 @@ export function findNearestCity(lat: number, lon: number): City | null {
   }
 
 
+// Indirection so tests can stub the geocoding HTTP call (same pattern as
+// the dnsPromises.lookup mock in website-scraper.test.ts).
+export const geocodingHttp = { fetch: undiciFetch }
+
 export async function searchLocation(query: string, { limit = 10, language = 'en' }, timeout: number, signal: AbortSignal): Promise<LocationResult[]> {
 
-    const url = 'https://geocoding-api.open-meteo.com/v1/search'
+    const url = new URL('https://geocoding-api.open-meteo.com/v1/search')
+    url.searchParams.set('name', query)
+    url.searchParams.set('count', String(limit))
+    url.searchParams.set('language', language)
+    url.searchParams.set('format', 'json')
 
-    const locationResp = await axios.get(url, {
-        params: { 
-            name: query,
-            count: limit,
-            language: language,
-            format: 'json',
-        },
-        timeout,
-        signal,
+    const locationResp = await geocodingHttp.fetch(url, {
+        signal: AbortSignal.any([signal, AbortSignal.timeout(timeout)]),
     })
+    if (!locationResp.ok) {
+        throw new Error(`Open-Meteo geocoding request failed with status ${locationResp.status}`)
+    }
 
-    const { results } = locationResp.data
+    const { results } = (await locationResp.json()) as { results?: unknown[] }
     
     const locations: LocationResult[] = (results || []).map((r: any) => {
         return {
