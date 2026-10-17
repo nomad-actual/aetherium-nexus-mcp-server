@@ -4,14 +4,15 @@ services:
     container_name: aetherium-nexus-mcp
     env_file:
       - .env
-    environment:
-      # Bind to localhost by default — safe for local development.
-      # To expose on the network, set MCP_SERVER_HOST to 0.0.0.0 AND
-      # set MCP_SERVER_AUTH_TOKEN to a secret (see .env.example).
-      MCP_SERVER_HOST: 127.0.0.1
+    # Note: MCP_SERVER_HOST is intentionally NOT overridden here — compose
+    # `environment:` entries silently take precedence over env_file, which
+    # would pin the bind address and defeat the .env setting. The .env
+    # value applies: default `localhost` binds the container's loopback
+    # (safe, unreachable from outside); set MCP_SERVER_HOST=0.0.0.0 AND
+    # MCP_SERVER_AUTH_TOKEN in .env for network access (see .env.example).
     ports:
-      # Note: with the 127.0.0.1 default this port is only reachable
-      # from inside the container host. Change to "0.0.0.0:3030:3000"
-      # if you need external access (and set MCP_SERVER_AUTH_TOKEN).
+      # Published on all host interfaces. Whether it is reachable depends
+      # on MCP_SERVER_HOST in .env (loopback bind = unreachable from
+      # outside, see note above).
       - "3030:3000"
     restart: unless-stopped
