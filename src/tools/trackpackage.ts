@@ -49,6 +49,10 @@ export async function trackPackages(args: { packages: string[] }, config: Aether
                 return null
             }
 
+            if (!trackingInfo.trackingUrl.includes('%s')) {
+                logger.warn({ trackingUrl: trackingInfo.trackingUrl, message: 'Tracking URL template missing %s placeholder — skipping' })
+                return null
+            }
             const urlToScrape = trackingInfo.trackingUrl.replace('%s', trackingInfo.trackingNumber)
 
             const trackingContent = {
