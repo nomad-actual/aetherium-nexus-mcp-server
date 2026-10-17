@@ -152,6 +152,25 @@ export function assertFetchableUrl(url: string): void {
     }
 }
 
+// Every SSRF refusal message starts with this prefix (pre-check and
+// connect-time alike). jsdom re-wraps connector errors into plain Errors
+// that keep the message but drop the class and the cause, so the message
+// is the only signal that survives the fetch path.
+const SSRF_REFUSAL_PREFIX = 'Refusing to '
+
+// Walks the error cause chain for an SSRF refusal message.
+// Returns the refusal message, or null when the error is not a refusal.
+export function getSsrfRefusalReason(err: unknown): string | null {
+    let cur: unknown = err
+    let depth = 0
+    while (cur instanceof Error && depth < 10) {
+        if (cur.message.startsWith(SSRF_REFUSAL_PREFIX)) return cur.message
+        cur = cur.cause
+        depth++
+    }
+    return null
+}
+
 // dns.lookup has no timeout option and getaddrinfo can hang on a broken
 // resolver, so the lookup gets its own budget inside the connect budget.
 function lookupAll(hostname: string, timeoutMs: number): Promise<Array<{ address: string; family: number }>> {

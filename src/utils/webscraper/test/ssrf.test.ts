@@ -3,7 +3,7 @@ import http from 'node:http'
 import net from 'node:net'
 import { promises as dnsPromises } from 'node:dns'
 import { buildConnector } from 'undici'
-import { getBlockedUrlReason, isBlockedIp, assertFetchableUrl, createSsrfSafeConnect } from '../ssrf.ts'
+import { getBlockedUrlReason, isBlockedIp, assertFetchableUrl, createSsrfSafeConnect, getSsrfRefusalReason } from '../ssrf.ts'
 import { doWebScrape } from '../webscraper.ts'
 import { getConfig } from '../../config.ts'
 
@@ -130,6 +130,25 @@ function startServer(handler: http.RequestListener): Promise<{ url: string; clos
     })
 }
 
+test('getSsrfRefusalReason finds refusals through the cause chain', (t) => {
+    const preCheck = new Error('Refusing to fetch http://localhost/: localhost is not allowed')
+    t.is(getSsrfRefusalReason(preCheck), 'Refusing to fetch http://localhost/: localhost is not allowed')
+
+    // jsdom re-wraps connector errors into plain Errors: the message
+    // survives, the class and cause do not.
+    const jsdomWrapped = new Error('Refusing to connect to 10.0.0.1: private or reserved address')
+    t.is(getSsrfRefusalReason(jsdomWrapped), 'Refusing to connect to 10.0.0.1: private or reserved address')
+
+    const withCause = Object.assign(new Error('outer failure'), {
+        cause: new Error('Refusing to connect to 10.0.0.1: private or reserved address'),
+    })
+    t.is(getSsrfRefusalReason(withCause), 'Refusing to connect to 10.0.0.1: private or reserved address')
+
+    t.is(getSsrfRefusalReason(new Error('connect ECONNREFUSED 10.0.0.1:80')), null)
+    t.is(getSsrfRefusalReason('not an error'), null)
+    t.is(getSsrfRefusalReason(null), null)
+})
+
 test('doWebScrape refuses loopback URLs before any network request', async (t) => {
     const server = await startServer((req, res) => {
         res.writeHead(200, { 'Content-Type': 'text/html' })
@@ -137,30 +156,22 @@ test('doWebScrape refuses loopback URLs before any network request', async (t) =
     })
     t.teardown(() => server.close())
 
-    const error = await doWebScrape(server.url, getConfig(), new AbortController().signal)
-        .then(
-            () => null,
-            (e: unknown) => e,
-        )
+    const outcome = await doWebScrape(server.url, getConfig(), new AbortController().signal)
 
-    t.true(error instanceof Error)
-    t.regex((error as Error).message, /Refusing to fetch/)
+    t.is(outcome.status, 'blocked')
+    if (outcome.status !== 'blocked') return
+    t.regex(outcome.reason, /Refusing to fetch/)
     t.is(server.hits(), 0, 'no request reached the loopback server')
 })
 
-test('doWebScrape refuses hostnames that resolve to private addresses', async (t) => {
+test('doWebScrape reports a connect-time refusal as blocked, not empty', async (t) => {
     mockLookup(t, [{ address: '192.168.0.10', family: 4 }])
 
-    const result = await doWebScrape('http://intranet.example/', getConfig(), new AbortController().signal)
-        .then(
-            (r: unknown) => r,
-            (e: unknown) => e,
-        )
+    const outcome = await doWebScrape('http://intranet.example/', getConfig(), new AbortController().signal)
 
-    // Scrapers catch SSRF errors and try the next scraper; when all fail
-    // the result is an empty array rather than a thrown error.
-    t.true(Array.isArray(result), 'returns array (not thrown error)')
-    t.is((result as any[]).length, 0, 'no content for blocked hostname')
+    t.is(outcome.status, 'blocked', 'a connect-time SSRF refusal must not surface as an empty page')
+    if (outcome.status !== 'blocked') return
+    t.regex(outcome.reason, /Refusing to connect/)
 })
 
 test('isBlockedIp fails closed on unparseable input', (t) => {

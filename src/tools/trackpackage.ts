@@ -5,7 +5,7 @@ import z from 'zod';
 import type { AetheriumConfig, McpToolContent, ToolsDef } from '../types.ts';
 import { getConfig } from '../utils/config.ts';
 import logger from '../utils/logger.ts';
-import { doWebScrape } from '../utils/webscraper/webscraper.ts';
+import { doWebScrape, type ScrapeOutcome } from '../utils/webscraper/webscraper.ts';
 
 function trackOnePackage(packageNumber: string, config: AetheriumConfig): TrackingNumber | null {
     const info = getTracking(packageNumber);
@@ -17,7 +17,7 @@ function trackOnePackage(packageNumber: string, config: AetheriumConfig): Tracki
 }
 
 
-type ScrapeFn = (url: string, config: AetheriumConfig, signal: AbortSignal) => Promise<McpToolContent[]>
+type ScrapeFn = (url: string, config: AetheriumConfig, signal: AbortSignal) => Promise<ScrapeOutcome>
 
 export async function trackPackages(args: { packages: string[] }, config: AetheriumConfig, abortSignal: AbortSignal, scrape: ScrapeFn = doWebScrape): Promise<CallToolResult> {
     const packages = new Set(args.packages || [])
@@ -60,14 +60,17 @@ export async function trackPackages(args: { packages: string[] }, config: Aether
                 name: trackingInfo.name,
             }
 
-            const scraped: McpToolContent[] = await scrape(urlToScrape, config, abortSignal)
+            const outcome = await scrape(urlToScrape, config, abortSignal)
 
-            if (scraped.length === 0) {
-                logger.info({ result: p, message: `No tracking content found at ${urlToScrape}` })
+            if (outcome.status !== 'content') {
+                const message = outcome.status === 'blocked'
+                    ? outcome.reason
+                    : `No tracking content found at ${urlToScrape}`
+                logger.info({ result: p, message })
                 return null
             }
 
-            return { trackingContent, scraped }
+            return { trackingContent, scraped: outcome.contents }
         }),
     )
 

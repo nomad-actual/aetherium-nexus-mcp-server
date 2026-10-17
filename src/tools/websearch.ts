@@ -68,9 +68,9 @@ export async function search(args: any, config: AetheriumConfig, signal: AbortSi
     const contentArr: any[] = []
 
     promisesResults.forEach((result) => {
-        if (result.status === 'fulfilled' && (result.value !== null || Array.isArray(result.value))) {
-            contentArr.push(...result.value)
-            return
+        // Blocked (SSRF refusal) and empty results contribute nothing.
+        if (result.status === 'fulfilled' && result.value.status === 'content') {
+            contentArr.push(...result.value.contents)
         }
     })
 
