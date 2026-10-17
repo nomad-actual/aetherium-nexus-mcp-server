@@ -24,6 +24,7 @@ src/
     ├── formatter.ts      # Locale-aware date/number formatting
     ├── location.ts       # City lookup helpers
     ├── location-db/      # Bundled world-cities JSON database
+    ├── ntp.ts            # Minimal NTP client (one dgram socket per request)
     ├── promises.ts       # Promise utility helpers
     └── webscraper/
         ├── webscraper.ts # Orchestrator (routes to the right scraper, SSRF pre-check + concurrency cap)
@@ -97,7 +98,8 @@ The Dockerfile uses `node:26-alpine3.23`, installs production deps only (`npm ci
 | Location | `DEFAULT_LOCATION_LAT`, `DEFAULT_LOCATION_LON` | Default lat/lon (Los Angeles); timezone derived via `geo-tz` |
 | NTP | `TIMESERVER_HOST`, `TIMESERVER_PORT`, `TIMESERVER_TIMEOUT` | Time server (time.nist.gov:123, 200 ms) |
 | Locale | `LOCALE_REGION`, `LOCALE_UNITS`, `LOCALE_MONTH`, `LOCALE_SHOWWEEKDAY`, `IS_24_HOUR_TIME` | Region (en-US), units, month style, weekday, 24h time |
-| Search | `SEARCH_HOST`, `SEARCH_TIMEOUT`, `SEARCH_PAGE_CONTENT_LIMIT`, `SEARCH_MAX_RESULTS` | SearXNG host, timeout ms, content limit, max results |
+| Search | `SEARCH_HOST`, `SEARCH_TIMEOUT`, `SEARCH_MAX_RESULTS` | SearXNG host, timeout ms, max results |
+| Tracking | `TRACK_MAX_PACKAGES` | Max tracking numbers per `track-package` call (20) |
 | Scraper | `SCRAPER_CONTENT_LIMIT`, `SCRAPER_REQUEST_TIMEOUT`, `SCRAPER_CONNECT_TIMEOUT`, `SCRAPER_MAX_CONCURRENT`, `SCRAPER_CRW_HOST`, `SCRAPER_CRW_API_KEY`, `SCRAPER_CRW_RENDER_JS`, `SCRAPER_CRW_ONLY_MAIN_CONTENT`, `SCRAPER_BASIC_MIN_LENGTH` | Content limits, request timeout, connect timeout ms (2000), max in-flight scrapes (10), CRW (Firecrawl-compatible) host/key/render options, min readable content length |
 
 ## Testing

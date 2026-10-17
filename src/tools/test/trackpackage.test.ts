@@ -113,6 +113,24 @@ test('a blocked scrape is skipped without failing the others', async (t) => {
     t.is(firstText(result), 'Found 2 of 3 packages')
 })
 
+test('the package cap comes from config', async (t) => {
+    const scrape = async (): Promise<ScrapeOutcome> => {
+        t.fail('no scrape should be attempted')
+        return { status: 'empty' }
+    }
+
+    const config = { ...getConfig(), tracking: { maxPackages: 2 } }
+
+    const result = await trackPackages(
+        { packages: UPS },
+        config,
+        new AbortController().signal,
+        scrape,
+    )
+
+    t.is(firstText(result), 'Too many packages (3) provided. Please provide up to 2 packages.')
+})
+
 test('an empty package list is rejected before any scrape', async (t) => {
     const scrape = async (): Promise<ScrapeOutcome> => {
         t.fail('no scrape should be attempted')

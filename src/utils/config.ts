@@ -100,6 +100,10 @@ export function getConfig(): AetheriumConfig {
         },
         weather: {
             forecastDays: parseInt(process.env.WEATHER_FORECAST_DAYS || '', 10) || 7,
+        },
+        tracking: {
+            // Clamped to 1 minimum: a cap of 0 would reject every call.
+            maxPackages: Math.max(1, parseInt(process.env.TRACK_MAX_PACKAGES || '', 10) || 20),
         }
     }
 

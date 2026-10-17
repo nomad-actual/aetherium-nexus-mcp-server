@@ -26,8 +26,7 @@ export async function trackPackages(args: { packages: string[] }, config: Aether
         return { content: [{ type: 'text', text: 'No packages provided' }] }
     }
 
-    // todo config max of a few (probably 5) packages to track
-    const maxPackages = 20
+    const maxPackages = config.tracking.maxPackages
 
     if (packages.size > maxPackages) {
         return { content: [{ type: 'text', text: `Too many packages (${packages.size}) provided. Please provide up to ${maxPackages} packages.` }] }
