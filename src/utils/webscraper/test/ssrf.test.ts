@@ -84,30 +84,30 @@ function mockLookup(t: Teardown, result: unknown) {
     })
 }
 
-test('assertFetchableUrl rejects blocked URLs', async (t) => {
-    await t.throwsAsync(() => assertFetchableUrl('http://127.0.0.1/', getConfig()), {
+test('assertFetchableUrl rejects blocked URLs', (t) => {
+    t.throws(() => assertFetchableUrl('http://127.0.0.1/'), {
         message: /Refusing to fetch.*private or reserved address 127\.0\.0\.1/,
     })
-    await t.throwsAsync(() => assertFetchableUrl('http://localhost/', getConfig()), {
+    t.throws(() => assertFetchableUrl('http://localhost/'), {
         message: /Refusing to fetch.*localhost/,
     })
-    await t.throwsAsync(() => assertFetchableUrl('file:///etc/passwd', getConfig()), {
+    t.throws(() => assertFetchableUrl('file:///etc/passwd'), {
         message: /Refusing to fetch.*disallowed scheme/,
     })
 })
 
-test('assertFetchableUrl does not resolve hostnames — that is done at connect time', async (t) => {
+test('assertFetchableUrl does not resolve hostnames — that is done at connect time', (t) => {
     // DNS resolution is delegated to createSsrfSafeConnect which pins the
     // validated address, preventing DNS rebinding. Asserting here would
     // waste a libuv thread (two getaddrinfo per scrape).
     mockLookup(t, [{ address: '127.0.0.1', family: 4 }])
-    await assertFetchableUrl('http://rebinding.example.com/', getConfig())
+    assertFetchableUrl('http://rebinding.example.com/')
     t.pass()
 })
 
-test('assertFetchableUrl passes hostnames that resolve to public addresses', async (t) => {
+test('assertFetchableUrl passes hostnames that resolve to public addresses', (t) => {
     mockLookup(t, [{ address: '93.184.216.34', family: 4 }])
-    await assertFetchableUrl('http://example.com/', getConfig())
+    assertFetchableUrl('http://example.com/')
     t.pass()
 })
 

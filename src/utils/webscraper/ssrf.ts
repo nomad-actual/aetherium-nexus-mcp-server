@@ -140,11 +140,7 @@ export function getBlockedUrlReason(url: string): string | null {
     return null
 }
 
-export async function assertFetchableUrl(
-    url: string,
-    _config: { scraper: { connectTimeout: number } },
-    _signal?: AbortSignal,
-): Promise<void> {
+export function assertFetchableUrl(url: string): void {
     // URL pattern checks (protocol, IP literals) happen here.
     // Hostname DNS resolution is delegated to createSsrfSafeConnect which
     // is the authoritative check — it pins the validated address, preventing
