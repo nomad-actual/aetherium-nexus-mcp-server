@@ -95,6 +95,24 @@ test('duplicate tracking numbers are deduped', async (t) => {
     t.is(firstText(result), 'Found 1 of 1 packages')
 })
 
+test('the package cap comes from config', async (t) => {
+    const scrape = async () => {
+        t.fail('no scrape should be attempted')
+        return []
+    }
+
+    const config = { ...getConfig(), tracking: { maxPackages: 2 } }
+
+    const result = await trackPackages(
+        { packages: UPS },
+        config,
+        new AbortController().signal,
+        scrape,
+    )
+
+    t.is(firstText(result), 'Too many packages (3) provided. Please provide up to 2 packages.')
+})
+
 test('an empty package list is rejected before any scrape', async (t) => {
     const scrape = async () => {
         t.fail('no scrape should be attempted')
