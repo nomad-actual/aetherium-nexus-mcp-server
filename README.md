@@ -70,7 +70,7 @@ See `docs/api.md` for full API documentation with input parameters and example J
 
 ### Prerequisites
 
-- **Node.js 24+** (required for `--experimental-strip-types`)
+- **Node.js 26** (native TypeScript via type stripping)
 - **.env file** (copy from `.env.example`)
 - **SearXNG instance** (for web search, optional)
 - **CRW instance** (Firecrawl-compatible scraper, optional — falls back to local HTML scraping when `SCRAPER_CRW_HOST` is unset)
