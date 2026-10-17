@@ -1,7 +1,7 @@
 import test from 'ava'
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.d.ts'
 import { trackPackages } from '../trackpackage.ts'
-import type { McpToolContent } from '../../types.ts'
+import type { ScrapeOutcome } from '../../utils/webscraper/webscraper.ts'
 import { getConfig } from '../../utils/config.ts'
 
 // Checksum-valid UPS numbers that ts-tracking-number recognizes.
@@ -20,12 +20,12 @@ test('scrapes run concurrently so the total is bounded by one scrape', async (t)
     let inFlight = 0
     let maxInFlight = 0
 
-    const scrape = async (url: string): Promise<McpToolContent[]> => {
+    const scrape = async (url: string): Promise<ScrapeOutcome> => {
         inFlight++
         maxInFlight = Math.max(maxInFlight, inFlight)
         await sleep(150)
         inFlight--
-        return [{ type: 'text', text: `content for ${url}` }]
+        return { status: 'content', contents: [{ type: 'text', text: `content for ${url}` }] }
     }
 
     const result = await trackPackages(
@@ -45,9 +45,9 @@ test('scrapes run concurrently so the total is bounded by one scrape', async (t)
 })
 
 test('a failing scrape does not fail the other packages', async (t) => {
-    const scrape = async (url: string): Promise<McpToolContent[]> => {
+    const scrape = async (url: string): Promise<ScrapeOutcome> => {
         if (url.includes('1Z999AA10123456793')) throw new Error('boom')
-        return [{ type: 'text', text: `content for ${url}` }]
+        return { status: 'content', contents: [{ type: 'text', text: `content for ${url}` }] }
     }
 
     const result = await trackPackages(
@@ -61,9 +61,9 @@ test('a failing scrape does not fail the other packages', async (t) => {
 })
 
 test('unrecognized tracking numbers are not scraped or counted', async (t) => {
-    const scrape = async () => {
+    const scrape = async (): Promise<ScrapeOutcome> => {
         t.fail('no scrape should be attempted')
-        return []
+        return { status: 'empty' }
     }
 
     const result = await trackPackages(
@@ -79,9 +79,9 @@ test('unrecognized tracking numbers are not scraped or counted', async (t) => {
 
 test('duplicate tracking numbers are deduped', async (t) => {
     let calls = 0
-    const scrape = async (url: string): Promise<McpToolContent[]> => {
+    const scrape = async (url: string): Promise<ScrapeOutcome> => {
         calls++
-        return [{ type: 'text', text: `content for ${url}` }]
+        return { status: 'content', contents: [{ type: 'text', text: `content for ${url}` }] }
     }
 
     const result = await trackPackages(
@@ -95,10 +95,28 @@ test('duplicate tracking numbers are deduped', async (t) => {
     t.is(firstText(result), 'Found 1 of 1 packages')
 })
 
+test('a blocked scrape is skipped without failing the others', async (t) => {
+    const scrape = async (url: string): Promise<ScrapeOutcome> => {
+        if (url.includes('1Z999AA10123456793')) {
+            return { status: 'blocked', reason: 'Refusing to connect to 10.0.0.1: private or reserved address' }
+        }
+        return { status: 'content', contents: [{ type: 'text', text: `content for ${url}` }] }
+    }
+
+    const result = await trackPackages(
+        { packages: UPS },
+        getConfig(),
+        new AbortController().signal,
+        scrape,
+    )
+
+    t.is(firstText(result), 'Found 2 of 3 packages')
+})
+
 test('an empty package list is rejected before any scrape', async (t) => {
-    const scrape = async () => {
+    const scrape = async (): Promise<ScrapeOutcome> => {
         t.fail('no scrape should be attempted')
-        return []
+        return { status: 'empty' }
     }
 
     const result = await trackPackages(

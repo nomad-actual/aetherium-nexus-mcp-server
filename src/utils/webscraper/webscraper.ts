@@ -4,8 +4,16 @@ import logger from '../logger.ts';
 import BasicHtmlScraper from './BasicHtmlScraper.ts';
 import CrwScraper from './CrwScraper.ts';
 import { abortTimeout } from '../promises.ts';
-import { assertFetchableUrl } from './ssrf.ts';
+import { assertFetchableUrl, getSsrfRefusalReason } from './ssrf.ts';
 import { withScrapeSlot } from './scrapeSlots.ts';
+
+// What a scrape produced. 'blocked' is the SSRF guard refusing the URL
+// (pre-check or connect time); 'empty' means every scraper ran and found
+// no readable content.
+export type ScrapeOutcome =
+    | { status: 'content'; contents: McpToolContent[] }
+    | { status: 'blocked'; reason: string }
+    | { status: 'empty' }
 
 function getScrapers(url: string) {
     return [
@@ -14,13 +22,17 @@ function getScrapers(url: string) {
     ].filter((scraper) => scraper.shouldAttempt(url))
 }
 
-export async function doWebScrape(url: string, config: AetheriumConfig, signal: AbortSignal): Promise<McpToolContent[]> {
+function errorMessage(err: unknown): string {
+    return err instanceof Error ? err.message : String(err)
+}
+
+export async function doWebScrape(url: string, config: AetheriumConfig, signal: AbortSignal): Promise<ScrapeOutcome> {
     try {
         assertFetchableUrl(url)
     } catch (err) {
-        const message = err instanceof Error ? err.message : String(err)
-        logger.warn(`[Scraper] ${message}`)
-        throw err
+        const reason = errorMessage(err)
+        logger.warn(`[Scraper] ${reason}`)
+        return { status: 'blocked', reason }
     }
 
     const scrapers = getScrapers(url)
@@ -38,18 +50,25 @@ export async function doWebScrape(url: string, config: AetheriumConfig, signal: 
                 logger.info(`Content found using scraper ${scraper.constructor.name} (${duration}s)`)
 
                 const results = await scraper.buildResult(contents)
-                return results
+                return { status: 'content', contents: results }
             }
 
             logger.debug(`[Scraper] ${scraper.constructor.name} returned null/empty on ${url}, trying next...`)
         } catch (err) {
-            const message = err instanceof Error ? err.message : String(err)
+            // A connect-time SSRF refusal hits every scraper the same way,
+            // so stop instead of burning the remaining attempts.
+            const refusalReason = getSsrfRefusalReason(err)
+            if (refusalReason !== null) {
+                logger.warn(`[Scraper] ${refusalReason}`)
+                return { status: 'blocked', reason: refusalReason }
+            }
+            const message = errorMessage(err)
             logger.warn(`[Scraper] ${scraper.constructor.name} failed on ${url}: ${message}, trying next...`)
         }
     }
 
     logger.warn(`No content found on webpage ${url}`)
-    return []
+    return { status: 'empty' }
 }
 
 // One scrape attempt: a slot from the bounded pool plus the per-scraper
