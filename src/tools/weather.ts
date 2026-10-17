@@ -282,7 +282,7 @@ async function currentWeatherToolHandler(
         currentWeatherVars: currentVars,
         dailyWeatherVars: dailyVars,
         hourlyWeatherVars: [],
-        forecastDays: 3 // todo: config
+        forecastDays: config.weather.forecastDays
     }
 
     logger.info({
@@ -316,7 +316,7 @@ async function currentWeatherToolHandler(
             // improve this by adding more details about the weather conditions (e.g., humidity, wind speed)
             // also units
             // what about snow or hail?
-            { type: 'text', text: `Percipitation ${precipitation}, Rain ${rain}`},
+            { type: 'text', text: `Precipitation ${precipitation}, Rain ${rain}`},
             { type: 'text', text: locationStr }
         ]
     }
@@ -331,7 +331,7 @@ async function weatherForecastToolHandler({ location }: any, config: AetheriumCo
     const timezone = locationObj?.timezone || config.defaultLocation.timezone
     const day = formatDate(time, config.locale, timezone)
 
-    const forecastDays = 7
+    const forecastDays = config.weather.forecastDays
 
     const weatherQuery: WeatherQuery = {
         lat: locationObj?.latitude || config.defaultLocation.lat,
