@@ -57,6 +57,11 @@ jobs:
             VERSION="0.1.0"
           else
             CURRENT=${LATEST#v}
+            # Strict semver guard: reject pre-release or non-numeric suffixes
+            if ! echo "$CURRENT" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+              echo "Latest tag v${CURRENT} is not a plain vX.Y.Z semver tag — aborting release"
+              exit 1
+            fi
             IFS=. read -r MAJOR MINOR PATCH <<< "$CURRENT"
             case "$BUMP" in
               major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
