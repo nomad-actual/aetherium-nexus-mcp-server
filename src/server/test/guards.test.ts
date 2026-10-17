@@ -29,6 +29,7 @@ function makeConfig(overrides: Partial<AetheriumConfig['mcpServer']> = {}): Aeth
         },
         search: { host: '', timeout: 1, maxResults: 1 },
         weather: { forecastDays: 7 },
+        tracking: { maxPackages: 20 },
         locale: { region: 'en-US', units: 'imperial', monthStyle: 'short', showWeekday: false, is24HourTime: false },
     }
 }

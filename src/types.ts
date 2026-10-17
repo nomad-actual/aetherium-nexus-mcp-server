@@ -131,6 +131,9 @@ export type AetheriumConfig = {
     weather: {
         forecastDays: number,
     },
+    tracking: {
+        maxPackages: number,
+    },
     locale: AetheriumLocaleOptions,
 }
 
