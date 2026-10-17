@@ -51,8 +51,8 @@ export type ForecastDay = {
     minTemp: number,
     description: string,
     time: Date,
-    percipitationSum: number,
-    percipitationHours: number,
+    precipitationSum: number,
+    precipitationHours: number,
 }
 
  export type LocationResult = { 
@@ -126,7 +126,6 @@ export type AetheriumConfig = {
     search: {
         host: string,
         timeout: number
-        contentLimit: number
         maxResults: number
     },
     weather: {

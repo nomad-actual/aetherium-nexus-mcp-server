@@ -26,14 +26,7 @@ const dailyVars = [
     'precipitation_hours'
 ]
 
-// to use for today's future forecast rather than only now's
-const hourlyVars = [
-    "temperature_2m", 
-    "apparent_temperature", 
-    "precipitation_probability", 
-    "precipitation",
-    "weather_code",
-]
+
 
 function buildCurrent(currentResponse: VariablesWithTime, todayForecast: ForecastDay): CurrentWeather {
     // would like to map vars array to values but this is fine for now
@@ -144,8 +137,8 @@ function buildDaily(daily: VariablesWithTime | null, utcOffsetSeconds: number): 
         weatherCode: daily.variables(0)!.valuesArray()!,
         temperatureMax2m: daily.variables(1)!.valuesArray()!,
         temperatureMin2m: daily.variables(2)!.valuesArray()!,
-        percipitationSum: daily.variables(3)!.valuesArray()!,
-        percipitationHours: daily.variables(4)!.valuesArray()!
+        precipitationSum: daily.variables(3)!.valuesArray()!,
+        precipitationHours: daily.variables(4)!.valuesArray()!
     }
 
     const days: ForecastDay[] = []
@@ -157,8 +150,8 @@ function buildDaily(daily: VariablesWithTime | null, utcOffsetSeconds: number): 
             description: weatherCodeToType(String(weatherData.weatherCode[i])),
             maxTemp: weatherData.temperatureMax2m[i],
             minTemp: weatherData.temperatureMin2m[i],
-            percipitationSum: weatherData.percipitationSum[i],
-            percipitationHours: weatherData.percipitationHours[i],
+            precipitationSum: weatherData.precipitationSum[i],
+            precipitationHours: weatherData.precipitationHours[i],
         })
     }
 
@@ -342,8 +335,8 @@ async function weatherForecastToolHandler(args: { location: string | undefined }
         units: config.locale.units,
         currentWeatherVars: currentVars,
         dailyWeatherVars: dailyVars,
-        hourlyWeatherVars: hourlyVars,
-        forecastDays // todo: config
+        hourlyWeatherVars: [],
+        forecastDays,
     }
 
     logger.info({

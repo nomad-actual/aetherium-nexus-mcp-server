@@ -44,7 +44,6 @@ export function getConfig(): AetheriumConfig {
 
     const searchHost = process.env.SEARCH_HOST || ''
     const searchTimeout = parseInt(process.env.SEARCH_TIMEOUT || '', 10) || 5_000
-    const searchContentLimit = parseInt(process.env.SEARCH_PAGE_CONTENT_LIMIT || '', 10) || 5_000
     const maxResults = parseInt(process.env.SEARCH_MAX_RESULTS || '', 10) || 5
 
     config = {
@@ -71,7 +70,6 @@ export function getConfig(): AetheriumConfig {
         search: {
             host: searchHost,
             timeout: searchTimeout,
-            contentLimit: searchContentLimit,
             maxResults: maxResults,
         },
         scraper: {
