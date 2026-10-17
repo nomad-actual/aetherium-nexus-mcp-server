@@ -1,7 +1,7 @@
 import test from 'ava'
-import axios from 'axios'
 import { createRequire } from 'node:module'
 import { buildCurrentWeatherTool } from '../weather.ts'
+import { geocodingHttp } from '../../utils/location.ts'
 
 const require = createRequire(import.meta.url)
 const openmeteo = require('openmeteo') as {
@@ -40,14 +40,15 @@ function stubWeatherResponse() {
 }
 
 test('summary says Unknown Location when the geocoder has no matching city', async (t) => {
-    const originalGet = axios.get
+    const originalGeocodingFetch = geocodingHttp.fetch
     const originalFetch = openmeteo.fetchWeatherApi
 
     // The geocoder returns a place whose name does not contain the query
     // ('New York City' does not contain 'nyc'), so closestMatch returns
     // null and the handler falls back to the default location.
-    axios.get = (async () => ({
-        data: {
+    geocodingHttp.fetch = (async () => ({
+        ok: true,
+        json: async () => ({
             results: [{
                 name: 'New York City',
                 latitude: 40.71,
@@ -61,12 +62,12 @@ test('summary says Unknown Location when the geocoder has no matching city', asy
                 admin1: 'New York',
                 admin2: '',
             }],
-        },
-    })) as typeof originalGet
+        }),
+    })) as unknown as typeof originalGeocodingFetch
 
     openmeteo.fetchWeatherApi = (async () => [stubWeatherResponse()]) as typeof originalFetch
     t.teardown(() => {
-        axios.get = originalGet
+        geocodingHttp.fetch = originalGeocodingFetch
         openmeteo.fetchWeatherApi = originalFetch
     })
 
