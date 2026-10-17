@@ -1,21 +1,19 @@
-import { Client as NTP } from 'ntp-time'
 import type { AetheriumConfig, NtpConfig, ToolsDef } from '../types.ts'
 import { getConfig } from '../utils/config.ts'
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.d.ts'
 import { formatDate, formatDateTime } from '../utils/formatter.ts'
 import logger from '../utils/logger.ts'
 import { abort } from '../utils/promises.ts'
+import { syncNtpTime } from '../utils/ntp.ts'
 
 export async function getTime(config: NtpConfig, abortSignal: AbortSignal): Promise<Date> {
     try {
         const { host, port = 123, timeout } = config
-        const client = new NTP(host, port, { timeout })
+        const time = await abort(syncNtpTime(host, port, timeout), abortSignal, 'Global timeout reached')
 
-        const packet = await abort(client.syncTime(), abortSignal, 'Global timeout reached')
+        logger.info(`Time retrieved ${time}`)
 
-        logger.info(`Time retrieved ${packet.time}`)
-
-        return packet.time
+        return time
     } catch (err) {
         logger.warn({ err }, 'NTP time retrieval failed, falling back to local system time')
         return new Date()
