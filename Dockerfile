@@ -10,8 +10,12 @@ COPY . .
 
 RUN npm ci --omit=dev  \
     && npm prune --production \
-    # Clean the apk cache to shave ~1 MiB
-    && rm -rf /var/cache/apk/*
+    # Clean the apk cache to shave ~1 MiB
+    && rm -rf /var/cache/apk/* \
+    # Run as non-root — the app fetches untrusted content and runs jsdom
+    && addgroup -S appgroup && adduser -S appuser -G appgroup
+
+USER appuser
 
 EXPOSE 3000
 
