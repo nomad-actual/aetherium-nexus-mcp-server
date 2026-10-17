@@ -1,6 +1,5 @@
 import 'dotenv/config'
 import express, { type NextFunction, type Request, type Response } from 'express'
-import cors from 'cors'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { buildMCPServer } from './server/mcp.server.ts'
 import { createBearerAuthMiddleware, hostValidationMiddleware } from './server/guards.ts'

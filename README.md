@@ -37,6 +37,9 @@ src/
         ├── CrwScraper.ts       # CRW (Firecrawl-compatible) API client, primary scraper
         ├── BasicHtmlScraper.ts # Local readability-based fallback scraper
         ├── IScraper.ts         # Scraper interface
+        ├── ssrf.ts             # SSRF protection (IP blocking, DNS pinning)
+        ├── dispatcher.ts       # SSRF-safe undici dispatcher
+        ├── scrapeSlots.ts      # Concurrent scrape limiter
         ├── normalizeWhitespace.ts # Whitespace normalization for scraped markdown
         └── test/               # Unit tests
 ```

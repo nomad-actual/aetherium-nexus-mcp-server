@@ -6,14 +6,15 @@ ENV MCP_SERVER_VERSION=${VERSION}
 
 WORKDIR /app
 
-COPY . .
+COPY package*.json ./
 
-RUN npm ci --omit=dev  \
-    && npm prune --production \
+RUN npm ci --omit=dev \
     # Clean the apk cache to shave ~1 MiB
     && rm -rf /var/cache/apk/* \
     # Run as non-root — the app fetches untrusted content and runs jsdom
     && addgroup -S appgroup && adduser -S appuser -G appgroup
+
+COPY . .
 
 USER appuser
 
