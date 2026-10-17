@@ -8,6 +8,7 @@ import { getConfig } from './utils/config.ts'
 import type { AetheriumConfig } from './types.ts'
 import logger from './utils/logger.ts'
 import { handleUncaughtErrors } from './utils/crashGuard.ts'
+import { closeDispatchers } from './utils/webscraper/dispatcher.ts'
 
 // Safety net before any other work: an uncaught exception (e.g. an unhandled
 // 'error' event from undici's HTTP/2 client) or an unhandled promise
@@ -25,14 +26,8 @@ if (hostValidation) {
     app.use(hostValidation)
 }
 
-// Explicit body limit (default is 100 KB).  Larger payloads are rejected
-// with a JSON-RPC error instead of the default Express HTML 413 page.
-const BODY_LIMIT = '1mb'
-app.use(express.json({ limit: BODY_LIMIT }))
-
-// Optional bearer auth for /mcp (MCP_SERVER_AUTH_TOKEN). /health stays open
-// for probes. When unset, the server is unauthenticated — fine for the
-// localhost trust model, risky on a network-exposed bind.
+// Bearer auth for /mcp MUST run before body parsing so unauthenticated
+// clients cannot waste CPU/memory on large bodies. /health stays open.
 if (config.mcpServer.authToken) {
     app.use('/mcp', createBearerAuthMiddleware(config.mcpServer.authToken))
 } else {
@@ -41,6 +36,11 @@ if (config.mcpServer.authToken) {
         + 'Set it for any server reachable beyond your own machine.'
     )
 }
+
+// Explicit body limit (default is 100 KB).  Larger payloads are rejected
+// with a JSON-RPC error instead of the default Express HTML 413 page.
+const BODY_LIMIT = '1mb'
+app.use(express.json({ limit: BODY_LIMIT }))
 
 app.post('/mcp', async (req: Request, res: Response) => {
     // In stateless mode, create a new instance of transport and server for each request
@@ -162,3 +162,26 @@ app.listen({ port, host }, (error: Error | undefined) => {
 
     logger.info(`MCP Server listening on http://${host}:${port}`)
 })
+
+/**
+ * Graceful shutdown: stop accepting new requests, drain in-flight ones
+ * with a short deadline, close shared undici agents, then exit.
+ */
+async function shutdown(signal: string) {
+    logger.info(`Received ${signal}, shutting down gracefully...`)
+
+    // Undici agents will abort in-flight requests when destroyed,
+    // so we just close them after a brief drain window.
+    setTimeout(async () => {
+        try {
+            await closeDispatchers()
+            logger.info('Dispatchers closed')
+        } catch (err) {
+            logger.error(err, 'Error closing dispatchers')
+        }
+        process.exit(0)
+    }, 2_000)
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'))
+process.on('SIGINT', () => shutdown('SIGINT'))

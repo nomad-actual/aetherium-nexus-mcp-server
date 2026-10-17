@@ -4,6 +4,7 @@ import z from 'zod'
 import { formatDate, formatTemperature } from '../utils/formatter.ts'
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.d.ts'
 import { WeatherApiResponse } from '@openmeteo/sdk/weather-api-response.js'
+import type { VariablesWithTime } from '@openmeteo/sdk/variables-with-time.js'
 import { getConfig } from '../utils/config.ts'
 import type {
     AetheriumConfig,
@@ -34,12 +35,12 @@ const hourlyVars = [
     "weather_code",
 ]
 
-function buildCurrent(currentResponse: any, todayForecast: ForecastDay): CurrentWeather {
+function buildCurrent(currentResponse: VariablesWithTime, todayForecast: ForecastDay): CurrentWeather {
     // would like to map vars array to values but this is fine for now
-    const currentTemp = currentResponse.variables(0).value()
-    const precipitation = currentResponse.variables(1).value()
-    const rain = currentResponse.variables(2).value()
-    const weatherDesc = weatherCodeToType(currentResponse.variables(3).value())
+    const currentTemp = currentResponse.variables(0)!.value()
+    const precipitation = currentResponse.variables(1)!.value()
+    const rain = currentResponse.variables(2)!.value()
+    const weatherDesc = weatherCodeToType(String(currentResponse.variables(3)!.value()))
 
     const current: CurrentWeather = {
         temperature: currentTemp,
@@ -53,41 +54,40 @@ function buildCurrent(currentResponse: any, todayForecast: ForecastDay): Current
     return current
 }
 
-// these come from openmateo's docs which
-// Weather variable documentation (WMO Weather interpretation codes (WW))
-function weatherCodeToType(code: string): string {
-    const weatherCode: { [key: string]: string } = {
-        '0': 'Clear sky',
-        '1': 'Mainly clear',
-        '2': 'Partly cloudy',
-        '3': 'Overcast',
-        '45': 'Fog',
-        '48': 'Depositing rime fog',
-        '51': 'Drizzle: Light intensity',
-        '53': 'Drizzle: Moderate intensity',
-        '55': 'Drizzle: Dense intensity',
-        '56': 'Freezing Drizzle: Light intensity',
-        '57': 'Freezing Drizzle: Dense intensity',
-        '61': 'Rain: Slight intensity',
-        '63': 'Rain: Moderate intensity',
-        '65': 'Rain: Heavy intensity',
-        '66': 'Freezing Rain: Light intensity',
-        '67': 'Freezing Rain: Heavy intensity',
-        '71': 'Snow fall: Slight intensity',
-        '73': 'Snow fall: Moderate intensity',
-        '75': 'Snow fall: Heavy intensity',
-        '77': 'Snow grains',
-        '80': 'Rain showers: Slight intensity',
-        '81': 'Rain showers: Moderate intensity',
-        '82': 'Rain showers: Violent intensity',
-        '85': 'Snow showers: Slight intensity',
-        '86': 'Snow showers: Heavy intensity',
-        '95': 'Thunderstorm: Slight or moderate',
-        '96': 'Thunderstorm with slight hail',
-        '99': 'Thunderstorm with heavy hail',
-    }
+// WMO Weather interpretation codes (WW) from Open-Meteo docs:
+const weatherCodeMap: Record<string, string> = {
+    '0': 'Clear sky',
+    '1': 'Mainly clear',
+    '2': 'Partly cloudy',
+    '3': 'Overcast',
+    '45': 'Fog',
+    '48': 'Depositing rime fog',
+    '51': 'Drizzle: Light intensity',
+    '53': 'Drizzle: Moderate intensity',
+    '55': 'Drizzle: Dense intensity',
+    '56': 'Freezing Drizzle: Light intensity',
+    '57': 'Freezing Drizzle: Dense intensity',
+    '61': 'Rain: Slight intensity',
+    '63': 'Rain: Moderate intensity',
+    '65': 'Rain: Heavy intensity',
+    '66': 'Freezing Rain: Light intensity',
+    '67': 'Freezing Rain: Heavy intensity',
+    '71': 'Snow fall: Slight intensity',
+    '73': 'Snow fall: Moderate intensity',
+    '75': 'Snow fall: Heavy intensity',
+    '77': 'Snow grains',
+    '80': 'Rain showers: Slight intensity',
+    '81': 'Rain showers: Moderate intensity',
+    '82': 'Rain showers: Violent intensity',
+    '85': 'Snow showers: Slight intensity',
+    '86': 'Snow showers: Heavy intensity',
+    '95': 'Thunderstorm: Slight or moderate',
+    '96': 'Thunderstorm with slight hail',
+    '99': 'Thunderstorm with heavy hail',
+}
 
-    return weatherCode[code] || 'Unknown'
+function weatherCodeToType(code: string): string {
+    return weatherCodeMap[code] || 'Unknown'
 }
 
 // Helper function to form time ranges
@@ -98,7 +98,7 @@ function range(start: number, stop: number, step: number) {
     )
 }
 
-function createTimeRanges(times: any, utcOffsetSeconds: number): Date[] {
+function createTimeRanges(times: VariablesWithTime, utcOffsetSeconds: number): Date[] {
     const ranges = range(
         Number(times.time()),
         Number(times.timeEnd()),
@@ -107,10 +107,10 @@ function createTimeRanges(times: any, utcOffsetSeconds: number): Date[] {
     return ranges.map((t) => new Date((t + utcOffsetSeconds) * 1000))
 }
 
-function buildHourly(hourly: any, utcOffsetSeconds: number): ForecastHour[] {
+function buildHourly(hourly: VariablesWithTime | null, utcOffsetSeconds: number): ForecastHour[] {
     if (!hourly) return []
 
-    const weatherData: any = {
+    const weatherData = {
         time: createTimeRanges(hourly, utcOffsetSeconds),
 		temperature2m: hourly.variables(0)!.valuesArray()!,
 		apparentTemperature: hourly.variables(1)!.valuesArray()!,
@@ -124,28 +124,28 @@ function buildHourly(hourly: any, utcOffsetSeconds: number): ForecastHour[] {
 
     for (let i = 0; i < len; i++) {
         hours.push({
-            time: weatherData.time[i].toISOString(),
-            description: weatherCodeToType(weatherData.weatherCode[i]),
-            temperature: weatherData.temperature2m[i],
-            feelsLike: weatherData.apparentTemperature[i],
-            precipitationProbability: weatherData.precipitationProbability[i],
-            precipitation: weatherData.precipitation[i],
+            time: weatherData.time[i],
+            description: weatherCodeToType(String(weatherData.weatherCode[i]!)),
+            temperature: weatherData.temperature2m[i]!,
+            feelsLike: weatherData.apparentTemperature[i]!,
+            precipitationProbability: weatherData.precipitationProbability[i]!,
+            precipitation: weatherData.precipitation[i]!,
         })
     }
 
     return hours
 }
 
-function buildDaily(daily: any, utcOffsetSeconds: number): ForecastDay[] {
+function buildDaily(daily: VariablesWithTime | null, utcOffsetSeconds: number): ForecastDay[] {
     if (!daily) return []
 
-    const weatherData: any = {
+    const weatherData = {
         time: createTimeRanges(daily, utcOffsetSeconds),
-        weatherCode: daily.variables(0).valuesArray(),
-        temperatureMax2m: daily.variables(1).valuesArray(),
-        temperatureMin2m: daily.variables(2).valuesArray(),
-        percipitationSum: daily.variables(3).valuesArray(),
-        percipitationHours: daily.variables(4).valuesArray()
+        weatherCode: daily.variables(0)!.valuesArray()!,
+        temperatureMax2m: daily.variables(1)!.valuesArray()!,
+        temperatureMin2m: daily.variables(2)!.valuesArray()!,
+        percipitationSum: daily.variables(3)!.valuesArray()!,
+        percipitationHours: daily.variables(4)!.valuesArray()!
     }
 
     const days: ForecastDay[] = []
@@ -153,8 +153,8 @@ function buildDaily(daily: any, utcOffsetSeconds: number): ForecastDay[] {
     const numDays = weatherData.time.length
     for (let i = 0; i < numDays; i++) {
         days.push({
-            time: weatherData.time[i].toISOString(),
-            description: weatherCodeToType(weatherData.weatherCode[i]),
+            time: weatherData.time[i],
+            description: weatherCodeToType(String(weatherData.weatherCode[i])),
             maxTemp: weatherData.temperatureMax2m[i],
             minTemp: weatherData.temperatureMin2m[i],
             percipitationSum: weatherData.percipitationSum[i],
@@ -172,7 +172,7 @@ async function fetchWeather(weatherQuery: WeatherQuery, signal: AbortSignal): Pr
     const precipitationUnit = weatherQuery.units === 'metric' ? 'mm' : 'inch'
     const temperatureUnit = weatherQuery.units === 'metric' ? 'celsius' : 'fahrenheit'
 
-    const params: any = {
+    const params: Record<string, unknown> = {
         latitude: [weatherQuery.lat],
         longitude: [weatherQuery.lon],
         temperature_unit: temperatureUnit,
@@ -222,7 +222,7 @@ function buildWeatherData(response: WeatherApiResponse): WeatherData {
         throw new Error('Weather data incomplete')
     }
 
-    const current = buildCurrent(response.current(), today)
+    const current = buildCurrent(response.current()!, today)
 
     const weather: WeatherData = {
         current,
@@ -259,8 +259,7 @@ async function fetchLocation(locationArg: string, config: AetheriumConfig, signa
     const locations = await searchLocation(city, { limit: 5 }, config.search.timeout, signal)
 
     if (locations.length === 0) {
-        // todo - return mcp error instead
-        throw new Error('Location not found')
+        return null
     }
 
     return closestMatch(locations, city, state)
@@ -284,7 +283,7 @@ async function currentWeatherToolHandler(
         currentWeatherVars: currentVars,
         dailyWeatherVars: dailyVars,
         hourlyWeatherVars: [],
-        forecastDays: 3 // todo: config
+        forecastDays: config.weather.forecastDays
     }
 
     logger.info({
@@ -318,13 +317,14 @@ async function currentWeatherToolHandler(
             // improve this by adding more details about the weather conditions (e.g., humidity, wind speed)
             // also units
             // what about snow or hail?
-            { type: 'text', text: `Percipitation ${precipitation}, Rain ${rain}`},
+            { type: 'text', text: `Precipitation ${precipitation}, Rain ${rain}`},
             { type: 'text', text: locationStr }
         ]
     }
 }
 
-async function weatherForecastToolHandler({ location }: any, config: AetheriumConfig, signal: AbortSignal): Promise<CallToolResult> {
+async function weatherForecastToolHandler(args: { location: string | undefined }, config: AetheriumConfig, signal: AbortSignal): Promise<CallToolResult> {
+    const { location } = args
     const lookup = await resolveLocationLookup(location, config)
     const locationObj = await fetchLocation(lookup, config, signal)
     const time = await getTime(config.timeserver, signal)
@@ -333,7 +333,7 @@ async function weatherForecastToolHandler({ location }: any, config: AetheriumCo
     const timezone = locationObj?.timezone || config.defaultLocation.timezone
     const day = formatDate(time, config.locale, timezone)
 
-    const forecastDays = 7
+    const forecastDays = config.weather.forecastDays
 
     const weatherQuery: WeatherQuery = {
         lat: locationObj?.latitude || config.defaultLocation.lat,
@@ -412,7 +412,7 @@ export function buildCurrentWeatherTool(): ToolsDef {
                 openWorldHint: true,
             },
         },
-        handler: async(args: any, signal: AbortSignal) => {
+        handler: async(args: { location: string | undefined }, signal: AbortSignal) => {
             const config = getConfig()
             return currentWeatherToolHandler(args, config, signal)
         }
@@ -437,7 +437,7 @@ export function buildForecastTool(): ToolsDef {
                 openWorldHint: true,
             }
         },
-        handler: async(args: any, signal: AbortSignal) => {
+        handler: async(args: { location: string | undefined }, signal: AbortSignal) => {
             try {
                 const config = getConfig()
                 return weatherForecastToolHandler(args, config, signal)
