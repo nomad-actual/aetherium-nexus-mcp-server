@@ -8,6 +8,17 @@ import { JSDOM } from 'jsdom'
 import BasicHtmlScraper from '../BasicHtmlScraper.ts'
 import { getConfig } from '../../config.ts'
 
+// Readable text under the 140-character minimum.
+const SHORT_PAGE = `<!DOCTYPE html>
+<html>
+<head><title>Short</title></head>
+<body>
+  <article>
+    <p>The package was delivered to the front porch yesterday.</p>
+  </article>
+</body>
+</html>`
+
 // Long enough for Readability's charThreshold (140 by default) to pass.
 const PAGE = `<!DOCTYPE html>
 <html>
@@ -105,6 +116,21 @@ test.serial('scrape closes the JSDOM window when the signal aborts mid-fetch', a
     t.is(windows.length, 1, 'the in-flight JSDOM instance settled')
     t.is(closed.length, 1, 'the late JSDOM window was closed')
     t.is(closed[0], windows[0])
+})
+
+test.serial('scrape returns null when readable content is below the minimum length', async (t) => {
+    // Readability's charThreshold only triggers relaxed retries — a page
+    // with a few words still "succeeds". The configured minimum is a real
+    // floor, enforced after parsing.
+    fakeFromUrl(t, SHORT_PAGE, 0)
+
+    const result = await new BasicHtmlScraper().scrape(
+        'http://test.example/short',
+        getConfig(),
+        new AbortController().signal,
+    )
+
+    t.is(result, null)
 })
 
 test.serial('scrape refuses loopback URLs at connect', async (t) => {
