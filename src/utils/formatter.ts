@@ -36,8 +36,8 @@ export function formatDate(date: Date, localeOpts: AetheriumLocaleOptions, timez
         month: localeOpts.monthStyle,
         day: 'numeric',
         weekday,
-        hourCycle:  localeOpts.is24HourTime ? 'h24' : 'h12',
-        timeZone: timezone
+        hourCycle: localeOpts.is24HourTime ? 'h24' : 'h12',
+        ...(timezone && { timeZone: timezone })
     })
 }
 
