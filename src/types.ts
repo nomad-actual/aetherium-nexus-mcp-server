@@ -149,9 +149,6 @@ export type ReadableWebpageContent = {
 export type McpToolContent = {
     type: 'text',
     text: string,
-} | {
-    type: 'image',
-    image: string, // base64 encoded
 }
 
 export type ToolsDef = {

@@ -306,10 +306,10 @@ async function currentWeatherToolHandler(
     const currTemp = formatTemperature(temperature, config.locale)
     const maxTemp = formatTemperature(maxTempRaw, config.locale)
 
-    const weatherSummary = 
-        `Current conditions for ${locationObj?.name}: ${currTemp} ${description}. High of ${maxTemp}.`
-
     const locationStr = makeLocationString(locationObj)
+
+    const weatherSummary =
+        `Current conditions for ${locationStr}: ${currTemp} ${description}. High of ${maxTemp}.`
 
     return {
         content: [
@@ -367,10 +367,10 @@ async function weatherForecastToolHandler(args: { location: string | undefined }
     const currTemp = formatTemperature(temperature, config.locale)
     const maxTemp = formatTemperature(maxTempRaw, config.locale)
 
-    const weatherSummary = 
-        `Current conditions for ${locationObj?.name}: ${currTemp} ${description}. High of ${maxTemp}.`
-
     const locationStr = makeLocationString(locationObj)
+
+    const weatherSummary =
+        `Current conditions for ${locationStr}: ${currTemp} ${description}. High of ${maxTemp}.`
 
     logger.info(`Weather Summary: ${weatherSummary} Location: ${locationStr} `)
 

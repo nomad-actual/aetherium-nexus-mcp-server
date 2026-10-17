@@ -9,7 +9,15 @@ async function scrape(args: { url: string }, config: AetheriumConfig, abortSigna
     try {
         logger.info(`Scraping webpage ${args.url}...`)
 
-        const contents = await doWebScrape(args.url, config, abortSignal) as any
+        const contents = await doWebScrape(args.url, config, abortSignal)
+
+        if (contents.length === 0) {
+            // An empty content array gives the LLM no signal about what
+            // happened. Say so explicitly (scraper failures are logged).
+            return {
+                content: [{ type: 'text', text: `No readable content found at ${args.url}` }],
+            }
+        }
 
         return { content: contents }
     } catch (error) {
