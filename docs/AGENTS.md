@@ -24,6 +24,7 @@ src/
     ├── formatter.ts      # Locale-aware date/number formatting
     ├── location.ts       # City lookup helpers
     ├── location-db/      # Bundled world-cities JSON database
+    ├── ntp.ts            # Minimal NTP client (one dgram socket per request)
     ├── promises.ts       # Promise utility helpers
     └── webscraper/
         ├── webscraper.ts # Orchestrator (routes to the right scraper, SSRF pre-check + concurrency cap)
