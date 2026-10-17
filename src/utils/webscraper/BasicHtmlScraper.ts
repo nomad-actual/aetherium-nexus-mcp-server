@@ -83,10 +83,12 @@ export default class BasicHtmlScraper implements IScraper {
             trimInPlace(dom.window.document)
             logger.debug(`[BasicHtmlScraper] DOM trimmed, running Readability`)
 
-            // Pass configurable thresholds to Readability:
-            //   charThreshold: minimum character count needed for a result (from config.minReadableLength)
+            // charThreshold only triggers Readability's relaxed retries —
+            // any non-empty text survives them. The configured minimum is
+            // enforced as a real floor on the normalized text, below.
+            const minReadableLength = config.scraper.basicHtmlReader.minReadableLength
             const reader = new Readability(dom.window.document, {
-                charThreshold: config.scraper.basicHtmlReader.minReadableLength,
+                charThreshold: minReadableLength,
                 debug: false,
                 maxElemsToParse: 250_000,
             } as Record<string, unknown>)
@@ -111,6 +113,11 @@ export default class BasicHtmlScraper implements IScraper {
 
             // cleanup content
             let processedTextContent = normalizeWhitespace(textContent || '')
+
+            if (processedTextContent.length < minReadableLength) {
+                logger.info(`Readable content for ${url} is ${processedTextContent.length} characters, below the ${minReadableLength} minimum`)
+                return null
+            }
 
             const maxContentLength = config.scraper.contentLimit
             if (processedTextContent.length > maxContentLength) {
