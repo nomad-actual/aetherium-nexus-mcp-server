@@ -5,6 +5,7 @@ import z from 'zod';
 import type { AetheriumConfig, ToolsDef } from '../types.ts';
 import { getConfig } from '../utils/config.ts';
 import { doWebScrape } from '../utils/webscraper/webscraper.ts';
+import { wrapBodyWithSizeLimit } from '../utils/webscraper/dispatcher.ts';
 
 type SearXNGResult = {
     url: string,
@@ -29,7 +30,24 @@ async function searchForResults(queryArg: string, config: AetheriumConfig, abort
         throw new Error(`SearXNG search failed with status ${resp.status}`)
     }
 
-    const data = (await resp.json()) as { results?: SearXNGResult[] }
+    // Cap the SearXNG response body to prevent OOM from a slow-drip or
+    // compromised search backend (F8).  CRW already has this cap.
+    const sizeController = new AbortController()
+    const limitedBody = wrapBodyWithSizeLimit(
+        resp.body as ReadableStream<Uint8Array>,
+        config.scraper.maxBytes,
+        sizeController,
+    )
+
+    const chunks: Uint8Array[] = []
+    const reader = limitedBody.getReader()
+    while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        if (value) chunks.push(value)
+    }
+    const bodyBuffer = Buffer.concat(chunks)
+    const data = JSON.parse(bodyBuffer.toString()) as { results?: SearXNGResult[] }
     return data?.results ?? []
 }
 

@@ -15,6 +15,26 @@ import { getScrapeDispatcher } from './dispatcher.ts'
 
 const USER_AGENT = 'Mozilla/5.0 (compatible; AetheriumScraper)'
 
+/**
+ * Maximum DOM depth for the trim pass.  Deeply nested structures (e.g.
+ * 200 k nested <div>s) can hang the jsdom / Readability pipeline for
+ * seconds or minutes even though they are tiny in bytes.  By pruning
+ * aggressively at shallow depths we keep the trim fast and avoid
+ * burning CPU on pathological nesting.  Normal pages rarely exceed
+ * depth 20–30.
+ */
+const MAX_TRIM_DEPTH = 100
+
+function getNodeDepth(node: Node): number {
+    let depth = 0
+    let cur: Node | null = node.parentNode
+    while (cur) {
+        depth++
+        cur = cur.parentNode
+    }
+    return depth
+}
+
 function buildJsdomResources(url: string) {
     if (!/^https?:/i.test(url)) return undefined
 
@@ -208,6 +228,16 @@ function trimInPlace(doc: Document): void {
     const walker = doc.createTreeWalker(doc.body || doc.documentElement, SHOW_ELEMENT, {
         acceptNode(node) {
             const el = node as Element
+            const depth = (el as Node).parentNode
+                ? getNodeDepth(el)
+                : 0
+
+            // Skip deeply nested nodes to avoid CPU DoS from pathological
+            // nesting (F4).  They are almost never meaningful content.
+            if (depth > MAX_TRIM_DEPTH) {
+                return FILTER_REJECT
+            }
+
             const tag = el.tagName.toLowerCase()
 
             if (UNNECESSARY_ELEMENTS.has(tag)) {
