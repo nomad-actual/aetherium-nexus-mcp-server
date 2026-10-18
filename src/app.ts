@@ -117,7 +117,8 @@ app.delete('/mcp', async (req: Request, res: Response) => {
 })
 
 app.get('/health', (req: Request, res: Response) => {
-    res.status(200).json({ status: 'ok', uptime: process.uptime() })
+    // No uptime — it leaks reboot/crash timing to unauthenticated callers (F11).
+    res.status(200).json({ status: 'ok' })
 })
 
 // Catch-all error handler for /mcp — returns JSON-RPC error objects
