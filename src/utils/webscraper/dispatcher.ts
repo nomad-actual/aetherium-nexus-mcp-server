@@ -3,6 +3,66 @@ import { getConfig } from '../config.ts'
 import { createSsrfSafeConnect } from './ssrf.ts'
 
 /**
+ * Wrap a DispatchHandler to enforce a response-body byte limit.
+ *
+ * When the accumulated bytes exceed `maxBytes`, the handler calls
+ * `controller.abort()` so that the underlying fetch (JSDOM.fromURL or
+ * undici.fetch) receives an error instead of streaming an unbounded
+ * body into memory.
+ *
+ * This is the dispatcher-level counterpart to `wrapBodyWithSizeLimit`
+ * which operates on the ReadableStream after it has been created.
+ */
+function wrapHandlerWithSizeLimit(
+    handler: Dispatcher.DispatchHandler,
+    maxBytes: number,
+): Dispatcher.DispatchHandler {
+    let received = 0
+    let aborted = false
+
+    return {
+        onRequestStart(controller, context) {
+            handler.onRequestStart?.(controller, context)
+        },
+        onRequestSent() {
+            handler.onRequestSent?.()
+        },
+        onResponseStarted() {
+            handler.onResponseStarted?.()
+        },
+        onResponseStart(controller, statusCode, headers, statusMessage) {
+            handler.onResponseStart?.(controller, statusCode, headers, statusMessage)
+        },
+        onResponseData(controller, chunk) {
+            if (aborted) return
+            received += chunk.length
+            if (received > maxBytes) {
+                aborted = true
+                const err = new Error(
+                    `Response body exceeds ${maxBytes} bytes`,
+                )
+                controller.abort(err)
+                return
+            }
+            handler.onResponseData?.(controller, chunk)
+        },
+        onResponseEnd(controller, trailers) {
+            if (aborted) return
+            handler.onResponseEnd?.(controller, trailers)
+        },
+        onResponseError(controller, error) {
+            handler.onResponseError?.(controller, error)
+        },
+        onRequestUpgrade(controller, statusCode, headers, socket) {
+            handler.onRequestUpgrade?.(controller, statusCode, headers, socket)
+        },
+        onBodySent(chunk) {
+            handler.onBodySent?.(chunk)
+        },
+    }
+}
+
+/**
  * Wrap a ReadableStream body with a byte counter.  Throws `AbortError`
  * when the body exceeds `maxBytes`.  Returns a new ReadableStream that
  * mirrors the original but aborts on overflow.
@@ -59,10 +119,14 @@ let apiDispatcher: Agent | null = null
  * Create a dispatcher that only allows requests to the document URL.
  * All other requests (subresources: CSS, images, etc.) are short-circuited
  * with a 403 response. Readability only needs the HTML document.
+ *
+ * Document responses are wrapped with a byte-limit to prevent remote
+ * servers from triggering an OOM crash by returning a huge payload.
  */
 export function getScrapeDispatcher(documentUrl: string): Dispatcher {
     const base = getScrapeDispatcherBase()
     const docUrl = new URL(documentUrl)
+    const maxBytes = getConfig().scraper.maxBytes
 
     return {
         dispatch(opts: Dispatcher.DispatchOptions, handler: Dispatcher.DispatchHandler) {
@@ -73,7 +137,10 @@ export function getScrapeDispatcher(documentUrl: string): Dispatcher {
                 reqUrl.pathname === docUrl.pathname &&
                 reqUrl.search === docUrl.search
             ) {
-                return base.dispatch(opts, handler)
+                // Wrap the handler to enforce a response-body byte limit,
+                // preventing remote OOM crashes from oversized responses.
+                const limitedHandler = wrapHandlerWithSizeLimit(handler, maxBytes)
+                return base.dispatch(opts, limitedHandler)
             }
             // Short-circuit subresource requests with 403
             handler.onResponseStart?.({} as any, 403, {} as any, 'Forbidden')
