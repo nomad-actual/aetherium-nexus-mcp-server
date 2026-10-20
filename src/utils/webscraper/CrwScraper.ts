@@ -7,6 +7,35 @@ import { normalizeWhitespace } from './normalizeWhitespace.ts'
 import { getApiDispatcher, wrapBodyWithSizeLimit } from './dispatcher.ts'
 import { assertFetchableUrl } from './ssrf.ts'
 
+/**
+ * Best-effort read of at most `limit` bytes of a response body, for logging.
+ * Never throws: an error body must not break the scrape, and a slow-drip body
+ * is bounded by the api dispatcher's bodyTimeout.
+ */
+async function readErrorBodySnippet(
+    body: ReadableStream<Uint8Array>,
+    limit: number,
+): Promise<string> {
+    const chunks: Uint8Array[] = []
+    let received = 0
+    try {
+        const reader = body.getReader()
+        while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
+            chunks.push(value)
+            received += value.byteLength
+            if (received >= limit) {
+                await reader.cancel()
+                break
+            }
+        }
+    } catch {
+        // Keep whatever was read so far.
+    }
+    return Buffer.concat(chunks).toString('utf8').slice(0, limit)
+}
+
 type CrwScrapeResponse = {
     success: boolean
     data?: {
@@ -74,22 +103,24 @@ export default class CrwScraper implements IScraper {
         })
 
         if (!resp.ok) {
-            // Read the error body (with size cap) for better debuggability (F10).
-            const errSizeController = new AbortController()
-            const errLimitedBody = wrapBodyWithSizeLimit(
-                resp.body as ReadableStream<Uint8Array>,
-                config.scraper.maxBytes,
-                errSizeController,
-            )
-            const errChunks: Uint8Array[] = []
-            const errReader = errLimitedBody.getReader()
-            while (true) {
-                const { done, value } = await errReader.read()
-                if (done) break
-                if (value) errChunks.push(value)
+            // Error bodies exist only for logging: cap at a few KB (never
+            // config.scraper.maxBytes) and never let parsing break the scrape.
+            const snippet = await readErrorBodySnippet(resp.body as ReadableStream<Uint8Array>, 8192)
+            let errMsg = `Status ${resp.status}`
+            try {
+                const parsed: unknown = JSON.parse(snippet)
+                if (parsed !== null && typeof parsed === 'object') {
+                    const obj = parsed as Record<string, unknown>
+                    errMsg =
+                        (typeof obj.error === 'string' && obj.error !== '' ? obj.error : undefined) ??
+                        (typeof obj.error_code === 'string' && obj.error_code !== '' ? obj.error_code : undefined) ??
+                        errMsg
+                }
+            } catch {
+                // Not JSON (HTML proxy page, plain text): log a trimmed snippet.
+                const raw = snippet.trim()
+                if (raw !== '') errMsg = `Status ${resp.status}: ${raw.slice(0, 200)}`
             }
-            const errBody = errChunks.length > 0 ? JSON.parse(Buffer.concat(errChunks).toString()) : null
-            const errMsg = errBody?.error || errBody?.error_code || `Status ${resp.status}`
             logger.error({ status: resp.status, error: errMsg }, `[CrwScraper] Request failed for ${url}`)
             return null
         }
