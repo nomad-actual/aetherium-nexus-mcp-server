@@ -5,7 +5,7 @@ import logger from '../logger.ts'
 import { fetch as undiciFetch } from 'undici'
 import { normalizeWhitespace } from './normalizeWhitespace.ts'
 import { getApiDispatcher, wrapBodyWithSizeLimit } from './dispatcher.ts'
-import { stripUrlUserinfo } from './ssrf.ts'
+import { assertFetchableUrl } from './ssrf.ts'
 
 type CrwScrapeResponse = {
     success: boolean
@@ -39,8 +39,12 @@ export default class CrwScraper implements IScraper {
         const { host, apiKey, renderJs, onlyMainContent } = config.scraper.crw
         if (!host) return null
 
-        // Strip credentials from the URL before logging (F5).
-        const safeUrl = stripUrlUserinfo(url)
+        // Validate the URL server-side before sending it to CRW.  CRW performs
+        // its own fetch from its network, so MCP-level SSRF pre-checks (which
+        // protect BasicHtmlScraper's direct connections) do not apply here.
+        // This prevents the CRW host from being used as an SSRF proxy to
+        // private/reserved addresses or cloud metadata endpoints.
+        assertFetchableUrl(url)
 
         const startTime = Date.now()
         const endpoint = `${host.replace(/\/+$/, '')}/v1/scrape`
