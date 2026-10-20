@@ -153,7 +153,11 @@ if (NON_LOCALHOST_HOSTS.includes(host) && !config.mcpServer.authToken) {
     process.exit(1)
 }
 
-app.listen({ port, host }, (error: Error | undefined) => {
+// Explicit maxHeaderSize so oversized headers get an HTTP 431 instead
+// of a raw TCP reset (F14).  Node's default is 16 KB; bump to 64 KB
+// to accommodate legitimate clients with large cookies / auth tokens
+// while still bounding the attack surface.
+app.listen({ port, host, maxHeaderSize: 64 * 1024 }, (error: Error | undefined) => {
     if (error) {
         logger.error(error, 'Error starting MCP server')
         process.exit(1)
