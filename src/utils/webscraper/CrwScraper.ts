@@ -5,7 +5,36 @@ import logger from '../logger.ts'
 import { fetch as undiciFetch } from 'undici'
 import { normalizeWhitespace } from './normalizeWhitespace.ts'
 import { getApiDispatcher, wrapBodyWithSizeLimit } from './dispatcher.ts'
-import { stripUrlUserinfo } from './ssrf.ts'
+import { assertFetchableUrl, stripUrlUserinfo } from './ssrf.ts'
+
+/**
+ * Best-effort read of at most `limit` bytes of a response body, for logging.
+ * Never throws: an error body must not break the scrape, and a slow-drip body
+ * is bounded by the api dispatcher's bodyTimeout.
+ */
+async function readErrorBodySnippet(
+    body: ReadableStream<Uint8Array>,
+    limit: number,
+): Promise<string> {
+    const chunks: Uint8Array[] = []
+    let received = 0
+    try {
+        const reader = body.getReader()
+        while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
+            chunks.push(value)
+            received += value.byteLength
+            if (received >= limit) {
+                await reader.cancel()
+                break
+            }
+        }
+    } catch {
+        // Keep whatever was read so far.
+    }
+    return Buffer.concat(chunks).toString('utf8').slice(0, limit)
+}
 
 type CrwScrapeResponse = {
     success: boolean
@@ -39,6 +68,13 @@ export default class CrwScraper implements IScraper {
         const { host, apiKey, renderJs, onlyMainContent } = config.scraper.crw
         if (!host) return null
 
+        // Validate the URL server-side before sending it to CRW.  CRW performs
+        // its own fetch from its network, so MCP-level SSRF pre-checks (which
+        // protect BasicHtmlScraper's direct connections) do not apply here.
+        // This prevents the CRW host from being used as an SSRF proxy to
+        // private/reserved addresses or cloud metadata endpoints.
+        assertFetchableUrl(url)
+
         // Strip credentials from the URL before logging (F5).
         const safeUrl = stripUrlUserinfo(url)
 
@@ -70,7 +106,25 @@ export default class CrwScraper implements IScraper {
         })
 
         if (!resp.ok) {
-            logger.error(`[CrwScraper] Request failed for ${safeUrl}. Status code: ${resp.status}`)
+            // Error bodies exist only for logging: cap at a few KB (never
+            // config.scraper.maxBytes) and never let parsing break the scrape.
+            const snippet = await readErrorBodySnippet(resp.body as ReadableStream<Uint8Array>, 8192)
+            let errMsg = `Status ${resp.status}`
+            try {
+                const parsed: unknown = JSON.parse(snippet)
+                if (parsed !== null && typeof parsed === 'object') {
+                    const obj = parsed as Record<string, unknown>
+                    errMsg =
+                        (typeof obj.error === 'string' && obj.error !== '' ? obj.error : undefined) ??
+                        (typeof obj.error_code === 'string' && obj.error_code !== '' ? obj.error_code : undefined) ??
+                        errMsg
+                }
+            } catch {
+                // Not JSON (HTML proxy page, plain text): log a trimmed snippet.
+                const raw = snippet.trim()
+                if (raw !== '') errMsg = `Status ${resp.status}: ${raw.slice(0, 200)}`
+            }
+            logger.error({ status: resp.status, error: errMsg }, `[CrwScraper] Request failed for ${safeUrl}`)
             return null
         }
 
