@@ -88,6 +88,27 @@ app.post('/mcp', async (req: Request, res: Response) => {
     }
 })
 
+// CORS preflight for browser-based MCP clients (F13).
+// Returns the same allowed-origins list that the transport uses.
+app.options('/mcp', (req: Request, res: Response) => {
+    const allowed = config.mcpServer.corsAllowedOrigins
+    if (allowed.length > 0) {
+        const origin = req.headers.origin
+        if (origin && allowed.includes(origin)) {
+            res
+                .status(204)
+                .set('Access-Control-Allow-Origin', origin)
+                .set('Access-Control-Allow-Methods', 'POST, OPTIONS')
+                .set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+                .set('Access-Control-Max-Age', '86400')
+                .end()
+            return
+        }
+    }
+    // No allowed origins configured — reject preflight.
+    res.status(403).end()
+})
+
 // SSE notifications not supported in stateless mode
 app.get('/mcp', async (req: Request, res: Response) => {
     logger.info('Received GET MCP request')
@@ -124,6 +145,21 @@ app.get('/health', (req: Request, res: Response) => {
 // instead of Express's default HTML error pages (which leak stack traces).
 app.use('/mcp', (err: Error, _req: Request, res: Response, _next: NextFunction) => {
     logger.warn({ message: err.message }, 'MCP request error')
+
+    // Honor status codes from middleware (e.g. body-parser's PayloadTooLargeError
+    // → 413) instead of defaulting to 500 (F7).
+    if ('status' in err && typeof (err as any).status === 'number') {
+        const status = (err as any).status as number
+        const code = status >= 400 && status < 500 ? -32609 : -32603
+        if (!res.headersSent) {
+            res.status(status).json({
+                jsonrpc: '2.0',
+                error: { code, message: err.message || 'Request error' },
+                id: null,
+            })
+        }
+        return
+    }
 
     const status = err instanceof SyntaxError ? 400 : 500
     const code = err instanceof SyntaxError ? -32700 : -32603
