@@ -55,6 +55,52 @@ test('the logger redacts authorization and cookie headers', async (t) => {
     t.true(out.includes('"method":"POST"'), 'request method is still logged')
 })
 
+test('url fields are sanitized (userinfo stripped) instead of redacted', async (t) => {
+    captured.length = 0
+    capturing = true
+
+    try {
+        logger.info(
+            { url: 'https://user:pass@example.com/page?q=1', sourceURL: 'http://a:b@other.com/x' },
+            'url check',
+        )
+
+        const deadline = Date.now() + 2_000
+        while (Date.now() < deadline && !captured.some((l) => l.includes('url check'))) {
+            await sleep(25)
+        }
+    } finally {
+        capturing = false
+    }
+
+    const out = captured.join('')
+    t.false(out.includes('user:pass@'), 'userinfo is stripped from url')
+    t.false(out.includes('a:b@'), 'userinfo is stripped from sourceURL')
+    t.true(out.includes('https://example.com/page?q=1'), 'rest of the URL is preserved')
+    t.true(out.includes('http://other.com/x'), 'rest of sourceURL is preserved')
+    t.false(out.includes('[Redacted]'), 'URL fields are sanitized, not blanked')
+})
+
+test('url fields without userinfo pass through unchanged', async (t) => {
+    captured.length = 0
+    capturing = true
+
+    try {
+        logger.info({ url: 'https://example.com/plain' }, 'plain url check')
+
+        const deadline = Date.now() + 2_000
+        while (Date.now() < deadline && !captured.some((l) => l.includes('plain url check'))) {
+            await sleep(25)
+        }
+    } finally {
+        capturing = false
+    }
+
+    const out = captured.join('')
+    t.true(out.includes('https://example.com/plain'), 'plain URL is logged as-is')
+    t.false(out.includes('[Redacted]'), 'no redaction marker for plain URLs')
+})
+
 test('top-level authorization and cookie fields are redacted too', async (t) => {
     captured.length = 0
     capturing = true
