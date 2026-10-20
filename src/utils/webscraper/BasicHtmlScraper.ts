@@ -12,6 +12,7 @@ const FILTER_REJECT = 2
 import { abort } from '../promises.ts'
 import { normalizeWhitespace } from './normalizeWhitespace.ts'
 import { getScrapeDispatcher } from './dispatcher.ts'
+import { stripUrlUserinfo } from '../url.ts'
 
 const USER_AGENT = 'Mozilla/5.0 (compatible; AetheriumScraper)'
 
@@ -60,7 +61,11 @@ export default class BasicHtmlScraper implements IScraper {
     async scrape(url: string, config: AetheriumConfig, signal: AbortSignal): Promise<any | null> {
         const startTime = Date.now()
 
-        logger.debug(`[BasicHtmlScraper] Starting JSDOM fetch for ${url}`)
+        // Strip credentials from the URL before returning it in tool output (F5).
+        // Log lines pass the raw url as a structured field — pino's redaction
+        // strips userinfo at serialization time.
+        const safeUrl = stripUrlUserinfo(url)
+        logger.debug({ url }, '[BasicHtmlScraper] Starting JSDOM fetch')
 
         const virtualConsole = new VirtualConsole({ captureRejections: true })
         virtualConsole.on('error', (err) => logger.error({ message: 'JSDOM CSS error (non-fatal)', err }))
@@ -69,7 +74,8 @@ export default class BasicHtmlScraper implements IScraper {
             if (jsdomErr.type === 'css-parsing') {
                 const cause = jsdomErr.cause instanceof Error ? jsdomErr.cause.message : String(jsdomErr.cause ?? '')
                 logger.warn({
-                    message: `JSDOM CSS parse error (non-fatal) for ${url}`,
+                    message: 'JSDOM CSS parse error (non-fatal)',
+                    url,
                     detail: cause,
                     sheetLength: typeof jsdomErr.sheetText === 'string' ? jsdomErr.sheetText.length : undefined,
                 })
@@ -115,13 +121,13 @@ export default class BasicHtmlScraper implements IScraper {
 
             const html = reader.parse()
             if (!html) {
-                logger.error(`No content from ${url} to parse`)
+                logger.error({ url }, 'No content to parse')
                 return null
             }
 
             const parseDuration = ((Date.now() - parseStart) / 1000).toFixed(2)
             const totalDuration = ((Date.now() - startTime) / 1000).toFixed(2)
-            logger.debug(`[BasicHtmlScraper] Readability complete (${parseDuration}s) for ${url}`)
+            logger.debug({ url }, `[BasicHtmlScraper] Readability complete (${parseDuration}s)`)
 
             const {
                 title,
@@ -135,7 +141,7 @@ export default class BasicHtmlScraper implements IScraper {
             let processedTextContent = normalizeWhitespace(textContent || '')
 
             if (processedTextContent.length < minReadableLength) {
-                logger.info(`Readable content for ${url} is ${processedTextContent.length} characters, below the ${minReadableLength} minimum`)
+                logger.info({ url }, `Readable content is ${processedTextContent.length} characters, below the ${minReadableLength} minimum`)
                 return null
             }
 
@@ -155,7 +161,7 @@ export default class BasicHtmlScraper implements IScraper {
             const altSiteName = capitalizeFirstLetter(new URL(url).hostname)
 
             return [{
-                url,
+                url: safeUrl,
                 title: title || '',
                 lang: lang || '',
                 content: processedTextContent,
