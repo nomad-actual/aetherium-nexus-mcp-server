@@ -11,7 +11,8 @@ function trackOnePackage(packageNumber: string, config: AetheriumConfig): Tracki
     const info = getTracking(packageNumber);
     if (!info) return null
 
-    logger.info({ packageNumber, info })
+    // Tracking numbers are semi-sensitive: debug level only (F9).
+    logger.debug({ packageNumber, info })
 
     return info
 }
@@ -43,8 +44,8 @@ export async function trackPackages(args: { packages: string[] }, config: Aether
             const trackingInfo = trackOnePackage(p, config)
 
             if (!trackingInfo || !trackingInfo.trackingUrl) {
-                // no drama at all, just log it
-                logger.info({ result: p, message: `No tracking information found for ${p}` })
+                // no drama at all, just log it (debug: contains the tracking number, F9)
+                logger.debug({ result: p, message: `No tracking information found for ${p}` })
                 return null
             }
 
@@ -66,7 +67,7 @@ export async function trackPackages(args: { packages: string[] }, config: Aether
                 const message = outcome.status === 'blocked'
                     ? outcome.reason
                     : `No tracking content found at ${urlToScrape}`
-                logger.info({ result: p, message })
+                logger.debug({ result: p, message })
                 return null
             }
 
