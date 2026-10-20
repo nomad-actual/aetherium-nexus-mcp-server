@@ -49,13 +49,13 @@ export default class CrwScraper implements IScraper {
         const startTime = Date.now()
         const endpoint = `${host.replace(/\/+$/, '')}/v1/scrape`
 
-        logger.debug(`[CrwScraper] Scrape request for ${safeUrl} via ${endpoint}`)
+        logger.debug(`[CrwScraper] Scrape request for ${url} via ${endpoint}`)
 
         const headers: Record<string, string> = { 'Content-Type': 'application/json' }
         if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`
 
         const body: Record<string, unknown> = {
-            url: safeUrl,
+            url,
             formats: ['markdown'],
             onlyMainContent,
             deadlineMs: config.scraper.timeout,
@@ -90,7 +90,7 @@ export default class CrwScraper implements IScraper {
             }
             const errBody = errChunks.length > 0 ? JSON.parse(Buffer.concat(errChunks).toString()) : null
             const errMsg = errBody?.error || errBody?.error_code || `Status ${resp.status}`
-            logger.error({ status: resp.status, error: errMsg }, `[CrwScraper] Request failed for ${safeUrl}`)
+            logger.error({ status: resp.status, error: errMsg }, `[CrwScraper] Request failed for ${url}`)
             return null
         }
 
@@ -115,23 +115,23 @@ export default class CrwScraper implements IScraper {
 
         if (!json.success || !json.data) {
             const code = json.error_code ? ` (${json.error_code})` : ''
-            logger.error(`[CrwScraper] Scrape failed for ${safeUrl}: ${json.error || 'unknown error'}${code}`)
+            logger.error(`[CrwScraper] Scrape failed for ${url}: ${json.error || 'unknown error'}${code}`)
             return null
         }
 
         if (json.data.warnings?.length) {
-            logger.warn(`[CrwScraper] Warnings from CRW for ${safeUrl}: ${json.data.warnings.join('; ')}`)
+            logger.warn(`[CrwScraper] Warnings from CRW for ${url}: ${json.data.warnings.join('; ')}`)
         }
 
         const markdown = (json.data.markdown || '').trim()
         if (!markdown) {
-            logger.error(`No content from CRW for ${safeUrl}`)
+            logger.error(`No content from CRW for ${url}`)
             return null
         }
 
         const metadata = json.data.metadata || {}
         const totalDuration = ((Date.now() - startTime) / 1000).toFixed(2)
-        logger.debug(`[CrwScraper] CRW complete (${totalDuration}s) for ${safeUrl}`)
+        logger.debug(`[CrwScraper] CRW complete (${totalDuration}s) for ${url}`)
 
         let content = normalizeWhitespace(markdown)
 
@@ -147,10 +147,10 @@ export default class CrwScraper implements IScraper {
             content = content.substring(0, truncIdx)
         }
 
-        const altSiteName = capitalizeFirstLetter(new URL(safeUrl).hostname)
+        const altSiteName = capitalizeFirstLetter(new URL(url).hostname)
 
         return [{
-            url: safeUrl,
+            url,
             title: metadata.title || '',
             lang: metadata.language || '',
             content,
@@ -159,7 +159,7 @@ export default class CrwScraper implements IScraper {
             scrapeDuration: totalDuration,
             meta: {
                 description: metadata.description || '',
-                sourceURL: metadata.sourceURL || safeUrl,
+                sourceURL: metadata.sourceURL || url,
                 statusCode: metadata.statusCode,
                 elapsedMs: metadata.elapsedMs,
             },
