@@ -3,11 +3,14 @@ import type { AetheriumConfig, ToolsDef } from '../types.ts'
 import { getConfig } from '../utils/config.ts'
 import logger from '../utils/logger.ts'
 import { doWebScrape } from '../utils/webscraper/webscraper.ts'
+import { stripUrlUserinfo } from '../utils/url.ts'
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.d.ts'
 
 async function scrape(args: { url: string }, config: AetheriumConfig, abortSignal: AbortSignal): Promise<CallToolResult> {
     try {
-        logger.info(`Scraping webpage ${args.url}...`)
+        // Structured field: pino's redaction strips userinfo at
+        // serialization time, so the raw URL is safe to pass (F5).
+        logger.info({ url: args.url }, 'Scraping webpage...')
 
         const outcome = await doWebScrape(args.url, config, abortSignal)
 
@@ -24,7 +27,7 @@ async function scrape(args: { url: string }, config: AetheriumConfig, abortSigna
                 // An empty content array gives the LLM no signal about what
                 // happened. Say so explicitly (scraper failures are logged).
                 return {
-                    content: [{ type: 'text', text: `No readable content found at ${args.url}` }],
+                    content: [{ type: 'text', text: `No readable content found at ${stripUrlUserinfo(args.url)}` }],
                 }
         }
     } catch (error) {
