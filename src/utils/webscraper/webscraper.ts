@@ -6,6 +6,7 @@ import CrwScraper from './CrwScraper.ts';
 import { abortTimeout } from '../promises.ts';
 import { assertFetchableUrl, getSsrfRefusalReason } from './ssrf.ts';
 import { withScrapeSlot } from './scrapeSlots.ts';
+import { stripUrlUserinfo } from '../url.ts';
 
 // What a scrape produced. 'blocked' is the SSRF guard refusing the URL
 // (pre-check or connect time); 'empty' means every scraper ran and found
@@ -26,7 +27,11 @@ function errorMessage(err: unknown): string {
     return err instanceof Error ? err.message : String(err)
 }
 
-export async function doWebScrape(url: string, config: AetheriumConfig, signal: AbortSignal): Promise<ScrapeOutcome> {
+export async function doWebScrape(rawUrl: string, config: AetheriumConfig, signal: AbortSignal): Promise<ScrapeOutcome> {
+    // Strip userinfo (username:password@) once at the entry, before it can
+    // reach log lines, SSRF refusal messages, or the scrapers (F5).
+    const url = stripUrlUserinfo(rawUrl)
+
     try {
         assertFetchableUrl(url)
     } catch (err) {
