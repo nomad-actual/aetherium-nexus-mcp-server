@@ -1,4 +1,4 @@
-FROM node:26-alpine3.24
+FROM node:26-alpine3
 ENV NODE_ENV=production
 
 ARG VERSION=dev
