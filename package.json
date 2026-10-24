@@ -36,15 +36,15 @@
     "openmeteo": "^1.2.3",
     "pino": "^10.4.0",
     "ts-tracking-number": "^1.0.17",
-    "undici": "^8.12.2",
+    "undici": "^8.12.3",
     "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@openmeteo/sdk": "^1.28.1",
+    "@openmeteo/sdk": "^1.29.0",
     "@types/express": "^5.0.6",
     "@types/jsdom": "^30.0.0",
     "@types/node": "^26.6.5",
-    "ava": "^8.0.2",
+    "ava": "^8.1.0",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"
   }
